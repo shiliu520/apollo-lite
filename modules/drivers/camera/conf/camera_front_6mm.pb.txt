@@ -2,7 +2,7 @@
 camera_dev: "/dev/camera/front_6mm"
 frame_id: "camera_front_6mm"
 pixel_format: "yuyv"
-io_method: IO_METHOD_MMAP
+io_method: IO_METHOD_USERPTR
 width: 1920
 height: 1080
 frame_rate: 20
