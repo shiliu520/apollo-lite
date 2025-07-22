@@ -88,6 +88,7 @@ USER_IN_CONTAINER="${USER}"
 UID_IN_CONTAINER="$(id -u)"
 GROUP_IN_CONTAINER="$(id -g -n)"
 GID_IN_CONTAINER="$(id -g)"
+DOCKER_GID=$(getent group docker | cut -d: -f3)
 
 # --- Helper Functions ---
 
@@ -348,19 +349,21 @@ function prepare_docker_volumes() {
     # Mount /dev directly. Needed for device access (GPU, sensors, etc.).
     volumes+=" -v /dev:/dev"
 
-    # bazel cache
-    if [[ -d "${BAZEL_CACHE_DIR}" ]]; then
-        info "✅ Cache directory exists: ${BAZEL_CACHE_DIR}"
-        # Directory exists – add mount volume option
-        volumes+=" -v ${BAZEL_CACHE_DIR}:${BAZEL_CACHE_DIR}"
+    # Ensure bazel cache directory exists with correct permissions
+    if [[ ! -d "${BAZEL_CACHE_DIR}" ]]; then
+      info "Creating cache directory: ${BAZEL_CACHE_DIR}"
+      sudo mkdir -p "${BAZEL_CACHE_DIR}"
+      sudo chown root:docker "${BAZEL_CACHE_DIR}"
+      sudo chmod 2775 "${BAZEL_CACHE_DIR}"
     else
-        # Directory does not exist – inform user to create it with sudo
-        warning "⚠️ Cache directory does NOT exist: ${BAZEL_CACHE_DIR}"
-        warning "Usually it is automatically created by docker."
-        warning "If not, please create it with sudo manually:"
-        warning "  sudo mkdir -p \"${BAZEL_CACHE_DIR}\""
-        warning "Then re-run this script"
+      group=$(stat -c '%G' "$BAZEL_CACHE_DIR")
+      perms=$(stat -c '%A' "$BAZEL_CACHE_DIR")
+      info "Using existing bazel cache directory: ${BAZEL_CACHE_DIR}"
+      info "group: $group, permissions: $perms"
     fi
+
+    # Add mount volume option
+    volumes+=" -v ${BAZEL_CACHE_DIR}:${BAZEL_CACHE_DIR}"
 
     # Optional: Mount NVIDIA specific directories for AARCH64 Jetson
     # local tegra_dir="/usr/lib/aarch64-linux-gnu/tegra"
@@ -500,16 +503,23 @@ function main() {
     # --- Phase 3: Docker Run Command Construction ---
     # Define the arrays for docker run options
     local run_opts=(
-        -itd     # Interactive, TTY, Detached (run in background)
-        --privileged # Grant extended privileges (often needed for device access)
-        --name "${DEV_CONTAINER}"
-        --net host # Use host network
-        --pid=host # Use host process namespace (allows host process inspection/signals)
-        --shm-size "${SHM_SIZE}"
-        -w /apollo             # Set working directory inside container
-        --hostname "${DEV_INSIDE}" # Set hostname inside container for easy identification
-        --label "owner=${USER}" # Label container for easy filtering/management (host user)
+      -itd     # Interactive, TTY, Detached (run in background)
+      --name "${DEV_CONTAINER}"
+      --net host # Use host network
+      --shm-size "${SHM_SIZE}"
+      -w /apollo             # Set working directory inside container
+      --hostname "${DEV_INSIDE}" # Set hostname inside container for easy identification
+      --label "owner=${USER}" # Label container for easy filtering/management (host user)
+      --group-add "${DOCKER_GID}" # Add the Docker group for bazel cache
     )
+
+    # Only run_opts added when not testing
+    if [[ "${CUSTOM_DIST}" != "testing" ]]; then
+      run_opts+=(
+        --privileged # Grant extended privileges (often needed for device access)
+        --pid=host # Use host process namespace (allows host process inspection/signals)
+      )
+    fi
 
     # Add GPU options based on detection
     local gpu_opts=()
@@ -589,11 +599,6 @@ function main() {
     # such as switching to the correct user or running a *very basic* setup script.
     # It should NOT attempt to install/download models/maps/tools in this minimal version.
     postrun_start_user "${DEV_CONTAINER}" # Pass container name, no specific setup args now
-
-    # Ensure read-write permissions of the global bazel cache dir
-    # This is crucial if Docker created the directory with root-only permissions
-    # TODO(zero): need check if needed!
-    # execute_in_container "${DEV_CONTAINER}" "chmod a+rwx ${BAZEL_CACHE_DIR}"
 
     # --- Phase 5: Completion ---
     ok "Congratulations! Apollo Dev Environment container '${DEV_CONTAINER}' is running."

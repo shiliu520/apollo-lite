@@ -10,7 +10,7 @@ IncludeCategories:
   # Note that the "main" header is priority 0
   # The priority is assigned to first match in the ordered list
   # Miscelaneous system libraries
-  - Regex:       '<(immintrin.h|malloc.h|wait.h|x86intrin.h|cuda.*)>'
+  - Regex:       '<(immintrin.h|malloc.h|wait.h|x86intrin.h|cuda.*|proj.h)>'
     Priority:    3
   # C standard libraries
   - Regex:       '<(arpa/|netinet/|net/if|sys/)?[^\./]*\.h>'
