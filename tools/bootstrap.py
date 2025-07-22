@@ -843,7 +843,7 @@ def validate_cuda_config(environ_cp):
         _APOLLO_ROOT_DIR, "third_party/gpus/find_cuda_config.py"
     )
     proc = subprocess.Popen(
-        [environ_cp["PYTHON_BIN_PATH"], find_cuda_script] + cuda_libraries,
+        ["python", find_cuda_script] + cuda_libraries,
         stdout=subprocess.PIPE,
         env=environ_cp,
     )
@@ -1027,7 +1027,8 @@ def main():
 
     reset_apollo_bazelrc()
     setup_common_dirs(environ_cp)
-    setup_python(environ_cp)
+    # TODO(daohu527): delete later, use rules_python instead.
+    # setup_python(environ_cp)
 
     environ_cp["TF_NEED_CUDA"] = "1"
     # build:gpu --config=using_cuda

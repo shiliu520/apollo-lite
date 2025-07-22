@@ -113,12 +113,21 @@ To build a specific module:
 ./apollo.sh build_cpu planning
 ```
 
-**Note:** If the build process is killed due to out-of-memory (OOM), try
-reducing the number of build threads:
+#### Notes and Troubleshooting
 
-```bash
-./apollo.sh build_cpu dreamview --cpus=2
-```
+- **Out of Memory (OOM) Issues:** If the build process is terminated due to
+  insufficient memory, try limiting the number of CPU threads used during the
+  build:
+
+  ```bash
+  ./apollo.sh build_cpu dreamview --cpus=2
+  ```
+
+- **Slow Download Speeds:** If you experience slow downloads, you can manually
+  download the required archive from the following link:
+  [Caiyun Cloud Drive](https://caiyun.139.com/w/i/2oxwFbadL3byc) (Extraction
+  code: `jfwu`). After downloading, place the archive in the `.cache/distdir`
+  directory within your codebase.
 
 ---
 

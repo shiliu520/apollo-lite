@@ -51,8 +51,8 @@ cc_library(
     alwayslink = True,
     copts = CAMERA_COPTS,
     deps = [
-        ":camera",
         "//cyber",
+        "//modules/drivers/camera/backend:camera_device",
         "//modules/common_msgs/basic_msgs:error_code_cc_proto",
         "//modules/common_msgs/basic_msgs:header_cc_proto",
         "//modules/common_msgs/sensor_msgs:sensor_image_cc_proto",
@@ -74,41 +74,6 @@ cc_library(
         "@opencv//:imgcodecs",
         "@opencv//:imgproc",
     ],
-)
-
-cc_library(
-    name = "camera",
-    srcs = select(
-        {
-            "@platforms//cpu:x86_64": [
-                "usb_cam.cc",
-                "util.cc",
-            ],
-            "@platforms//cpu:aarch64": [
-                "usb_cam.cc",
-            ],
-        },
-        no_match_error = "Please Build with an ARM or Linux x86_64 platform",
-    ),
-    hdrs = select(
-        {
-            "@platforms//cpu:x86_64": [
-                "usb_cam.h",
-                "util.h",
-            ],
-            "@platforms//cpu:aarch64": [
-                "usb_cam.h",
-            ],
-        },
-        no_match_error = "Please Build with an ARM or Linux x86_64 platform",
-    ),
-    deps = [
-        "//cyber",
-        "//modules/drivers/camera/proto:config_cc_proto",
-        "@ffmpeg//:avcodec",
-    ] + if_x86_64(
-        ["@adv_plat"],
-    ),
 )
 
 cpplint()

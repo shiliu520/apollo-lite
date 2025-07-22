@@ -3,8 +3,10 @@ set -euo pipefail
 
 TAB="    " # 4 Spaces
 
-APOLLO_REPO="apolloauto/apollo"
-UBUNTU_LTS="20.04"
+DOCKER_BUILDKIT=${DOCKER_BUILDKIT:-1}
+
+APOLLO_REPO="${APOLLO_REPO:-wheelos/apollo}"
+UBUNTU_LTS="${UBUNTU_LTS:-20.04}"
 
 declare -A CUDA_LITE_VERSIONS
 declare -A CUDNN_VERSIONS
@@ -14,13 +16,14 @@ CUDA_LITE_VERSIONS["x86_64"]="11.8.0"
 CUDNN_VERSIONS["x86_64"]="8"
 TENSORRT_VERSIONS["x86_64"]="8.6.1.6"
 # aarch64
-CUDA_LITE_VERSIONS["aarch64"]="10.2"
-CUDNN_VERSIONS["aarch64"]="8.0.0.180"
-TENSORRT_VERSIONS["aarch64"]="7.1.3"
+CUDA_LITE_VERSIONS["aarch64"]="11.4.3"
+CUDNN_VERSIONS["aarch64"]="8.6.0.166"
+TENSORRT_VERSIONS["aarch64"]="8.5.2"
 
 SUPPORTED_ARCHS=( x86_64 aarch64 )
 SUPPORTED_STAGES=( base cyber dev runtime )
-SUPPORTED_HARDWARE=( cpu gpu ) # Added explicit 'gpu' to make it clear for check
+# TODO(All): maybe ROCm support in the future
+SUPPORTED_COMPUTE_PLATFORM=( cpu cuda )
 SUPPORTED_CPU_STAGES=( cyber dev runtime )
 
 HOST_ARCH="$(uname -m)"
@@ -43,6 +46,13 @@ TENSORRT_VERSION=
 IMAGE_IN=
 IMAGE_OUT=
 DEV_IMAGE_IN=
+
+LOCAL_HTTP_ADDR=${LOCAL_HTTP_ADDR:-http://172.17.0.1:8388}
+
+function fail() {
+    echo "Error: $1" >&2
+    exit 1
+}
 
 function check_experimental_docker() {
     local daemon_cfg="/etc/docker/daemon.json"
@@ -84,23 +94,23 @@ function build_stage_check() {
     fi
 }
 
-function hardware_stage_check() {
-    local hardware="$1"
+function compute_platform_stage_check() {
+    local platform="$1"
     local stage="$2"
 
-    # Ensure hardware type is supported
-    if [[ ! " ${SUPPORTED_HARDWARE[*]} " =~ " ${hardware} " ]]; then
-        echo "Unsupported hardware type: ${hardware}. Supported types are: ${SUPPORTED_HARDWARE[*]}. Exiting..." >&2
+    # Ensure compute platform is supported
+    if [[ ! " ${SUPPORTED_COMPUTE_PLATFORM[*]} " =~ " ${platform} " ]]; then
+        echo "Unsupported compute platform: ${platform}. Supported platforms are: ${SUPPORTED_COMPUTE_PLATFORM[*]}. Exiting..." >&2
         exit 1
     fi
 
-    if [[ "${hardware}" == "cpu" ]]; then
+    if [[ "${platform}" == "cpu" ]]; then
         if [[ ! " ${SUPPORTED_CPU_STAGES[*]} " =~ " ${stage} " ]]; then
             echo "CPU mode only supports stages: ${SUPPORTED_CPU_STAGES[*]}. Got '${stage}'. Exiting..." >&2
             exit 1
         fi
     fi
-    # No specific stage check needed for 'gpu' if all stages are allowed
+    # No specific stage check needed for 'cuda' if all stages are allowed
 }
 
 function determine_target_arch_and_stage() {
@@ -117,7 +127,7 @@ function determine_target_arch_and_stage() {
 
     cpu_arch_support_check "${arch}"
     build_stage_check "${stage}"
-    hardware_stage_check "${extra}" "${stage}" # extra is the hardware type
+    compute_platform_stage_check "${extra}" "${stage}" # extra is the compute platform
 
     TARGET_ARCH="${arch}"
     TARGET_STAGE="${stage}"
@@ -141,75 +151,118 @@ function determine_cuda_versions() {
     fi
 }
 
-# determine_prev_image_timestamp removed as its logic is integrated into determine_images_in_out
+function determine_cpu_img() {
+  local arch="$1"
+  local stage="$2"
+  local timestamp="$3"
+  local effective_timestamp="${PREV_IMAGE_TIMESTAMP:-$timestamp}"
 
-function determine_images_in_out_name() {
-    local arch="$1"
-    local stage="$2"
-    local timestamp="$3"
+  # Define the general image name format
+  local cyber_img="${APOLLO_REPO}:cyber-${arch}-${UBUNTU_LTS}-${timestamp}"
+  local dev_img="${APOLLO_REPO}:dev-${arch}-${UBUNTU_LTS}-${timestamp}"
+  local runtime_img="${APOLLO_REPO}:runtime-${arch}-${UBUNTU_LTS}-${timestamp}"
 
-    if [[ "${TARGET_EXTRA}" == "cpu" ]]; then
-        case "${stage}" in
-            cyber)
-                IMAGE_IN="ubuntu:${UBUNTU_LTS}"
-                IMAGE_OUT="${APOLLO_REPO}:cyber-${arch}-${UBUNTU_LTS}-${timestamp}"
-                ;;
-            dev)
-                IMAGE_IN="${APOLLO_REPO}:cyber-${arch}-${UBUNTU_LTS}-${timestamp}"
-                IMAGE_OUT="${APOLLO_REPO}:dev-${arch}-${UBUNTU_LTS}-${timestamp}"
-                ;;
-            runtime)
-                IMAGE_IN="ubuntu:${UBUNTU_LTS}" # Or a more minimal ubuntu:focal-slim for runtime
-                DEV_IMAGE_IN="${APOLLO_REPO}:dev-${arch}-${UBUNTU_LTS}-${timestamp}"
-                IMAGE_OUT="${APOLLO_REPO}:runtime-${arch}-${UBUNTU_LTS}-${timestamp}"
-                ;;
-            *)
-                echo "Error: Unknown build stage for CPU mode: ${stage}. Exiting..." >&2
-                exit 1
-                ;;
-        esac
-        return
-    fi
+  # Define the previous stage image name
+  local prev_cyber_img="${APOLLO_REPO}:cyber-${arch}-${UBUNTU_LTS}-${effective_timestamp}"
+  local prev_dev_img="${APOLLO_REPO}:dev-${arch}-${UBUNTU_LTS}-${effective_timestamp}"
 
-    # GPU mode logic
-    local cudnn_ver="${CUDNN_VERSION%%.*}"
-    local trt_ver="${TENSORRT_VERSION%%.*}"
-    local base_image_name_prefix="${APOLLO_REPO}:cuda${CUDA_LITE}-cudnn${cudnn_ver}-trt${trt_ver}-devel-${UBUNTU_LTS}-${arch}"
+  case "${stage}" in
+    cyber)
+      IMAGE_IN="ubuntu:${UBUNTU_LTS}"
+      IMAGE_OUT="${cyber_img}"
+      ;;
+    dev)
+      IMAGE_IN="${prev_cyber_img}"
+      IMAGE_OUT="${dev_img}"
+      ;;
+    runtime)
+      IMAGE_IN="ubuntu:${UBUNTU_LTS}"
+      DEV_IMAGE_IN="${prev_dev_img}"
+      IMAGE_OUT="${runtime_img}"
+      ;;
+    *)
+      fail "Unknown build stage for CPU mode: '${stage}'"
+      ;;
+  esac
+}
 
-    case "${stage}" in
-        base)
-            IMAGE_IN="nvidia/cuda:${CUDA_LITE}-cudnn${cudnn_ver}-devel-ubuntu${UBUNTU_LTS}"
-            IMAGE_OUT="${base_image_name_prefix}-${timestamp}"
-            ;;
-        cyber)
-            IMAGE_IN="${base_image_name_prefix}-${timestamp}"
-            IMAGE_OUT="${APOLLO_REPO}:cyber-${arch}-${UBUNTU_LTS}-${timestamp}"
-            ;;
-        dev)
-            IMAGE_IN="${APOLLO_REPO}:cyber-${arch}-${UBUNTU_LTS}-${timestamp}"
-            IMAGE_OUT="${APOLLO_REPO}:dev-${arch}-${UBUNTU_LTS}-${timestamp}"
-            ;;
-        runtime)
-            IMAGE_IN="nvidia/cuda:${CUDA_LITE}-cudnn${cudnn_ver}-runtime-ubuntu${UBUNTU_LTS}"
-            DEV_IMAGE_IN="${APOLLO_REPO}:dev-${arch}-${UBUNTU_LTS}-${timestamp}"
-            IMAGE_OUT="${APOLLO_REPO}:runtime-${arch}-${UBUNTU_LTS}-${timestamp}"
-            ;;
-        *)
-            echo "Error: Unknown build stage for GPU mode: ${stage}. Exiting..." >&2
-            exit 1
-            ;;
-    esac
+function determine_gpu_img() {
+  local arch="$1"
+  local stage="$2"
+  local timestamp="$3"
+  local effective_timestamp="${PREV_IMAGE_TIMESTAMP:-$timestamp}"
+
+  # Extract the major version number from the determined global variables
+  local cudnn_ver="${CUDNN_VERSION%%.*}"
+  local trt_ver="${TENSORRT_VERSION%%.*}"
+
+  # Define the prefix for the GPU base image, logic is more centralized
+  local base_image_prefix="${APOLLO_REPO}:cuda${CUDA_LITE}-cudnn${cudnn_ver}-trt${trt_ver}-devel-${UBUNTU_LTS}-${arch}"
+  local base_image_tagged="${base_image_prefix}-${timestamp}"
+  local prev_base_image_tagged="${base_image_prefix}-${effective_timestamp}"
+
+  # Define the general image name format (consistent with CPU mode)
+  local cyber_img="${APOLLO_REPO}:cyber-${arch}-${UBUNTU_LTS}-${timestamp}"
+  local dev_img="${APOLLO_REPO}:dev-${arch}-${UBUNTU_LTS}-${timestamp}"
+  local runtime_img="${APOLLO_REPO}:runtime-${arch}-${UBUNTU_LTS}-${timestamp}"
+
+  # Define the previous stage image name (consistent with CPU mode)
+  local prev_cyber_img="${APOLLO_REPO}:cyber-${arch}-${UBUNTU_LTS}-${effective_timestamp}"
+  local prev_dev_img="${APOLLO_REPO}:dev-${arch}-${UBUNTU_LTS}-${effective_timestamp}"
+
+  case "${stage}" in
+    base)
+      IMAGE_IN="nvidia/cuda:${CUDA_LITE}-cudnn${cudnn_ver}-devel-ubuntu${UBUNTU_LTS}"
+      if [[ "${arch}" == "aarch64" ]]; then
+        # Note: nvidia/cuda may not work for all arm64v8 hardware, here
+        # we use a generic arm64v8 Ubuntu image as the base image. And
+        # install CUDA/CuDNN/TensorRT manually in the Dockerfile.
+        # See the Dockerfile(base.aarch64.dockerfile) for more details.
+        # TODO(All): specified via args, such as orin or xavier
+        IMAGE_IN="docker.io/arm64v8/ubuntu:${UBUNTU_LTS}"
+      fi
+      IMAGE_OUT="${base_image_tagged}"
+      ;;
+    cyber)
+      IMAGE_IN="${prev_base_image_tagged}"
+      IMAGE_OUT="${cyber_img}"
+      ;;
+    dev)
+      IMAGE_IN="${prev_cyber_img}"
+      IMAGE_OUT="${dev_img}"
+      ;;
+    runtime)
+      IMAGE_IN="nvidia/cuda:${CUDA_LITE}-cudnn${cudnn_ver}-runtime-ubuntu${UBUNTU_LTS}"
+      if [[ "${arch}" == "aarch64" ]]; then
+        # Note: nvidia/cuda may not work for all arm64v8 hardware, here
+        # we use a generic arm64v8 Ubuntu image as the base image. And
+        # install CUDA/CuDNN/TensorRT manually in the Dockerfile.
+        # See the Dockerfile(base.aarch64.dockerfile) for more details.
+        # TODO(All): specified via args, such as orin or xavier
+        IMAGE_IN="docker.io/arm64v8/ubuntu:${UBUNTU_LTS}"
+      fi
+      DEV_IMAGE_IN="${prev_dev_img}"
+      IMAGE_OUT="${runtime_img}"
+      ;;
+    *)
+      fail "Unknown build stage for GPU mode: '${stage}'"
+      ;;
+  esac
 }
 
 function determine_images_in_out() {
-    local current_timestamp="$(date +%Y%m%d_%H%M)"
-    # Use user-provided timestamp if available, otherwise use current timestamp
-    local effective_timestamp="${PREV_IMAGE_TIMESTAMP:-${current_timestamp}}"
+  # Use shell parameter expansion: if PREV_IMAGE_TIMESTAMP is not set, use the current timestamp
+  local timestamp
+  timestamp="$(date +%Y%m%d_%H%M)"
 
-    if [[ "${TARGET_EXTRA}" != "cpu" ]]; then
-        determine_cuda_versions "${TARGET_ARCH}"
-    fi
-    determine_images_in_out_name "${TARGET_ARCH}" "${TARGET_STAGE}" "${effective_timestamp}"
+  # Dispatch to different handler functions according to TARGET_EXTRA
+  if [[ "${TARGET_EXTRA}" == "cpu" ]]; then
+    determine_cpu_img "${TARGET_ARCH}" "${TARGET_STAGE}" "${timestamp}"
+  else
+    # In GPU mode, determine CUDA version first, then determine image name
+    determine_cuda_versions "${TARGET_ARCH}"
+    determine_gpu_img "${TARGET_ARCH}" "${TARGET_STAGE}" "${timestamp}"
+  fi
 }
 
 function docker_build_preview() {
@@ -236,6 +289,7 @@ function docker_build_run() {
 
     local build_args_array=()
     build_args_array+=( "--build-arg" "BASE_IMAGE=${IMAGE_IN}" )
+    build_args_array+=( "--build-arg" "LOCAL_HTTP_ADDR=${LOCAL_HTTP_ADDR}" )
 
     # Common args based on TARGET_EXTRA or specific stages
     if [[ "${TARGET_EXTRA}" == "cpu" || "${TARGET_STAGE}" == "cyber" || "${TARGET_STAGE}" == "dev" || "${TARGET_STAGE}" == "runtime" ]]; then
@@ -287,6 +341,8 @@ function parse_arguments() {
                 USE_CACHE=0 ;;
             -t|--timestamp)
                 PREV_IMAGE_TIMESTAMP="$1"; shift ;;
+            --cache-server)
+                LOCAL_HTTP_ADDR="$1"; shift ;;
             --dry)
                 DRY_RUN_ONLY=1 ;;
             -h|--help)
@@ -306,18 +362,18 @@ function parse_arguments() {
 function print_usage() {
   echo "Usage: $0 -f <Dockerfile> [options]"
   echo "Options:"
-  echo "${TAB}-c,--clean        Disable Docker cache"
-  echo "${TAB}-m,--mode         Install mode (build|download), default: ${INSTALL_MODE}"
-  echo "${TAB}-g,--geo          Geo location (cn|us), default: ${TARGET_GEOLOC}"
-  echo "${TAB}-t,--timestamp    Image tag timestamp (YYYYMMDD_HHMM), default: now"
-  echo "${TAB}--dry             Dry run (show build commands only)"
-  echo "${TAB}-h,--help         Show this help"
+  echo "${TAB}-c,--clean            Disable Docker cache"
+  echo "${TAB}-m,--mode             Install mode (build|download), default: ${INSTALL_MODE}"
+  echo "${TAB}-g,--geo              Geo location (cn|us), default: ${TARGET_GEOLOC}"
+  echo "${TAB}-t,--timestamp        Image tag timestamp (YYYYMMDD_HHMM), default: now"
+  echo "${TAB}--cache-server <URL>  Use a local HTTP server for caching packages (default: ${LOCAL_HTTP_ADDR})"
+  echo "${TAB}--dry                 Dry run (show build commands only)"
+  echo "${TAB}-h,--help             Show this help"
   echo
-  echo "Tip: To pre-download packages, use a local HTTP server (python3 -m http.server 8388)."
+  echo "Tip: To pre-download packages, use a local HTTP server (python3 -m http.server 8388). Or set LOCAL_HTTP_ADDR."
 }
 
 function main() {
-    export DOCKER_BUILDKIT=0
     parse_arguments "$@"
     determine_target_arch_and_stage "${DOCKERFILE}"
     check_experimental_docker

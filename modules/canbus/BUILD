@@ -1,6 +1,6 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
-load("//tools/install:install.bzl", "install", "install_files")
 load("//tools:cpplint.bzl", "cpplint")
+load("//tools/install:install.bzl", "install", "install_files")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -18,13 +18,14 @@ cc_library(
         "//modules/common/adapters:adapter_gflags",
         "//modules/common/monitor_log",
         "//modules/common/status",
+        "//modules/common_msgs/guardian_msgs:guardian_cc_proto",
         "//modules/drivers/canbus/can_client",
         "//modules/drivers/canbus/can_client:can_client_factory",
         "//modules/drivers/canbus/can_comm:can_receiver",
         "//modules/drivers/canbus/can_comm:can_sender",
-        "//modules/common_msgs/guardian_msgs:guardian_cc_proto",
         "@com_github_gflags_gflags//:gflags",
     ],
+    alwayslink = True,
 )
 
 cc_test(
@@ -41,7 +42,7 @@ cc_test(
 cc_binary(
     name = "libcanbus_component.so",
     linkshared = True,
-    linkstatic = False,
+    linkstatic = True,
     deps = [
         ":canbus_component_lib",
     ],

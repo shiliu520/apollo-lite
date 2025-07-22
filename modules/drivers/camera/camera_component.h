@@ -21,45 +21,56 @@
 #include <memory>
 #include <vector>
 
-#include "cyber/cyber.h"
-#include "modules/drivers/camera/proto/config.pb.h"
 #include "modules/common_msgs/sensor_msgs/sensor_image.pb.h"
+#include "modules/drivers/camera/proto/config.pb.h"
 
-#include "modules/drivers/camera/usb_cam.h"
+#include "cyber/cyber.h"
+#include "modules/drivers/camera/backend/camera_device.h"
 
 namespace apollo {
 namespace drivers {
 namespace camera {
 
-using apollo::cyber::Component;
-using apollo::cyber::Reader;
-using apollo::cyber::Writer;
-using apollo::drivers::Image;
-using apollo::drivers::camera::config::Config;
-
-class CameraComponent : public Component<> {
+/**
+ * @class CameraComponent
+ * @brief Apollo Cyber RT component for camera device management and image
+ * publishing.
+ *
+ * This component initializes a CameraDevice, continuously polls for images,
+ * processes them, and publishes them as protobuf messages to a Cyber RT
+ * channel.
+ */
+class CameraComponent : public apollo::cyber::Component<> {
  public:
   bool Init() override;
   ~CameraComponent();
 
  private:
-  void run();
+  // Main execution loop for image polling and publishing
+  void Run();
 
-  std::shared_ptr<Writer<Image>> writer_ = nullptr;
-  std::unique_ptr<UsbCam> camera_device_;
-  std::shared_ptr<Config> camera_config_;
-  CameraImagePtr raw_image_ = nullptr;
-  std::vector<std::shared_ptr<Image>> pb_image_buffer_;
-  uint32_t spin_rate_ = 200;
-  uint32_t device_wait_ = 2000;
-  int index_ = 0;
-  int buffer_size_ = 16;
-  const int32_t MAX_IMAGE_SIZE = 20 * 1024 * 1024;
-  std::future<void> async_result_;
-  std::atomic<bool> running_ = {false};
+  std::shared_ptr<apollo::cyber::Writer<apollo::drivers::Image>>
+      writer_;  ///< Cyber RT writer for image messages
+  std::unique_ptr<CameraDevice> camera_device_;    ///< Camera device interface
+  std::shared_ptr<config::Config> camera_config_;  ///< Camera configuration
+  std::vector<std::shared_ptr<apollo::drivers::Image>>
+      pb_image_buffer_;  ///< Circular buffer for protobuf image messages
+
+  uint32_t device_wait_ms_;  ///< Delay in milliseconds after poll failure
+  int index_ = 0;            ///< Current index in the circular buffer
+  int buffer_size_ = 3;      ///< Size of the circular buffer
+
+  static constexpr int32_t kMaxImageSize =
+      20 * 1024 * 1024;  ///< Maximum allowed image size in bytes (20 MB)
+
+  std::future<void>
+      async_result_;  ///< Future object for managing the async run() thread
+  std::atomic<bool> running_ = {
+      false};  ///< Atomic flag to control the run() loop's state
 };
 
 CYBER_REGISTER_COMPONENT(CameraComponent)
+
 }  // namespace camera
 }  // namespace drivers
 }  // namespace apollo

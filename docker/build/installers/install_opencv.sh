@@ -125,6 +125,7 @@ pushd "opencv-${VERSION}"
             -DCMAKE_INSTALL_PREFIX="${SYSROOT_DIR}" \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_SHARED_LIBS=ON \
+            -DWITH_NATIVE_OPTIMIZED_CODE=ON \
             -DENABLE_PRECOMPILED_HEADERS=OFF \
             -DOPENCV_GENERATE_PKGCONFIG=ON \
             -DBUILD_EXAMPLES=OFF \

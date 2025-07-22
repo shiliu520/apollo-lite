@@ -22,96 +22,111 @@ set -e
 cd $( dirname "${BASH_SOURCE[0]}")
 . ./installer_base.sh
 
-# References
-# 1) http://www.linuxfromscratch.org/blfs/view/svn/multimedia/ffmpeg.html
-# 2) https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu
-# 3) https://linuxize.com/post/how-to-install-ffmpeg-on-ubuntu-18-04
-# 4) https://launchpad.net/~savoury1/+archive/ubuntu/ffmpeg4
-# We choose 1) in this script
-# cat > /etc/apt/sources.list.d/ffmpeg4.list <<EOF
-# deb http://ppa.launchpad.net/savoury1/ffmpeg4/ubuntu bionic main
-# EOF
-# apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 374C7797FB006459
 
-apt_get_update_and_install \
-    nasm \
-    yasm \
-    libx265-dev \
-    libass-dev \
-    libfdk-aac-dev \
-    libmp3lame-dev \
-    libopus-dev \
-    libtheora-dev \
-    libvorbis-dev \
-    libvpx-dev \
-    libx264-dev \
-    libnuma-dev
+VERSION="7.0.2"
+CHECKSUM="8646515b638a3ad303e23af6a3587734447cb8fc0a0c064ecdb8e95c4fd8b389"
 
-VERSION="4.3.1"
-PKG_NAME="ffmpeg-${VERSION}.tar.xz"
-CHECKSUM="ad009240d46e307b4e03a213a0f49c11b650e445b1f8be0dda2a9212b34d2ffb"
-DOWNLOAD_LINK="http://ffmpeg.org/releases/ffmpeg-${VERSION}.tar.xz"
-download_if_not_cached "${PKG_NAME}" "${CHECKSUM}" "${DOWNLOAD_LINK}"
+check_ffmpeg_installed() {
+    local ffmpeg_bin="${SYSROOT_DIR}/bin/ffmpeg"
 
-tar xJf ${PKG_NAME}
-pushd ffmpeg-${VERSION}
-    sed -i 's/-lflite"/-lflite -lasound"/' configure
-    ./configure \
-        --prefix=${SYSROOT_DIR} \
-        --extra-libs="-lpthread -lm" \
-        --enable-gpl        \
-        --enable-version3   \
-        --enable-nonfree    \
-        --disable-static    \
-        --enable-shared     \
-        --disable-debug     \
-        --enable-avresample \
-        --enable-libass     \
-        --enable-libfdk-aac \
-        --enable-libfreetype \
-        --enable-libmp3lame \
-        --enable-libopus    \
-        --enable-libtheora  \
-        --enable-libvorbis  \
-        --enable-libvpx     \
-        --enable-libx264    \
-        --enable-libx265    \
-        --enable-nonfree
-    make -j$(nproc)
-    make install
-popd
+    if [[ -x "$ffmpeg_bin" ]]; then
+        info "FFmpeg found at ${ffmpeg_bin}, skipping compilation."
+        return 0
+    else
+        info "FFmpeg not found at ${ffmpeg_bin}, will compile and install."
+        return 1
+    fi
+}
 
-ldconfig
-
-rm -fr ${PKG_NAME} ffmpeg-${VERSION}
-
-if [[ -n "${CLEAN_DEPS}" ]]; then
-    apt_get_remove \
-        nasm \
-        yasm \
-        libx265-dev \
-        libass-dev \
-        libfdk-aac-dev \
-        libmp3lame-dev \
-        libopus-dev \
-        libtheora-dev \
-        libvorbis-dev \
-        libvpx-dev \
-        libx264-dev
-
-    # Don't remove libnuma-dev as it is required by coinor-libipopt1v5
-
-    # install runtime-dependencies of ffmpeg
+install_dependencies() {
+    info "Installing build-time and run-time dependencies for FFmpeg..."
+    # Combine all dependencies. The package manager will handle what's already installed.
+    # Using modern library versions available in standard repos (e.g., Ubuntu 20.04/22.04).
+    # Removed libnuma-dev as it's often a transitive dependency and should be handled
+    # by packages that actually need it (like libipopt-dev).
     apt_get_update_and_install \
-        libvpx5 \
-        libx264-152 \
-        libx265-146 \
-        libopus0   \
-        libmp3lame0 \
-        libvorbis0a \
-        libvorbisenc2 \
-        libfdk-aac1 \
-        libass9     \
-        libtheora0
-fi
+        nasm yasm \
+        libx264-dev libx265-dev libvpx-dev \
+        libfdk-aac-dev libmp3lame-dev libopus-dev \
+        libtheora-dev libvorbis-dev \
+        libass-dev libfreetype6-dev libva-dev libvdpau-dev
+}
 
+compile_ffmpeg() {
+    info "Compiling and installing FFmpeg version ${VERSION}..."
+    local pkg_name="ffmpeg-${VERSION}.tar.xz"
+    local download_link="http://ffmpeg.org/releases/${pkg_name}"
+
+    download_if_not_cached "${pkg_name}" "${CHECKSUM}" "${download_link}"
+
+    info "Extracting ${pkg_name}..."
+    tar -xf "${pkg_name}"
+
+    pushd "ffmpeg-${VERSION}"
+        # Configure FFmpeg with recommended flags.
+        # --extra-cflags="-I${SYSROOT_DIR}/include" --extra-ldflags="-L${SYSROOT_DIR}/lib"
+        # can help find dependencies in our custom prefix if needed.
+        ./configure \
+            --prefix="${SYSROOT_DIR}" \
+            --pkg-config-flags="--static" \
+            --extra-cflags="-I${SYSROOT_DIR}/include" \
+            --extra-ldflags="-L${SYSROOT_DIR}/lib" \
+            --enable-gpl \
+            --enable-version3 \
+            --enable-nonfree \
+            --enable-shared \
+            --disable-static \
+            --disable-debug \
+            --enable-libass \
+            --enable-libfdk-aac \
+            --enable-libfreetype \
+            --enable-libmp3lame \
+            --enable-libopus \
+            --enable-libtheora \
+            --enable-libvorbis \
+            --enable-libvpx \
+            --enable-libx264 \
+            --enable-libx265
+
+        info "Building with $(nproc) jobs..."
+        make -j"$(nproc)"
+
+        info "Installing..."
+        make install
+    popd
+}
+
+cleanup() {
+    info "Cleaning up..."
+    rm -rf "ffmpeg-${VERSION}.tar.xz" "ffmpeg-${VERSION}"
+
+    if [[ -n "${CLEAN_DEPS}" ]]; then
+        info "Removing build-time dependencies..."
+        # We only list packages that are purely for building. The runtime libraries
+        # (like libx264-164) will be kept as they are dependencies of the -dev packages.
+        # The package manager is smart enough to not remove required runtime libs.
+        apt_get_remove \
+            nasm yasm \
+            libx264-dev libx265-dev libvpx-dev \
+            libfdk-aac-dev libmp3lame-dev libopus-dev \
+            libtheora-dev libvorbis-dev \
+            libass-dev libfreetype6-dev libva-dev libvdpau-dev
+    fi
+}
+
+main() {
+    if ! check_ffmpeg_installed; then
+        install_dependencies
+        compile_ffmpeg
+        ldconfig
+        cleanup
+        info "FFmpeg ${VERSION} installation completed successfully."
+    else
+        info "Skipping FFmpeg installation."
+    fi
+
+    info "Verify with: ffmpeg -version"
+}
+
+# Run the main function.
+main
