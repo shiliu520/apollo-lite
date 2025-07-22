@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 class ReferenceLineVisualizer:
     POINT_PATTERN = re.compile(
-        r"\{x:\s*([-\d.]+),\s*y:\s*([-\d.]+),\s*theta:\s*([-\d.]+),\s*kappa:\s*([-\d.]+),\s*dkappa:\s*([-\d.]+)\}"
+        r"\{x:\s*(-?\d+\.\d+),\s*y:\s*(-?\d+\.\d+),\s*theta:\s*(-?\d+\.\d+),\s*kappa:\s*(-?\d+\.\d+),\s*dkappa:\s*(-?\d+\.\d+)\}"
     )
 
     def __init__(self, file_path):
@@ -71,7 +71,7 @@ class ReferenceLineVisualizer:
         # Arrows indicate heading direction
         u = np.cos(heading)
         v = np.sin(heading)
-        arrow_length = 1
+        arrow_length = 0.2
         ax_main.quiver(
             x,
             y,
@@ -81,11 +81,22 @@ class ReferenceLineVisualizer:
             scale_units="xy",
             scale=1 / arrow_length,
             color="red",
-            width=0.001,
+            width=0.003,
             label="Heading",
-            zorder=5,
+            zorder=10,
         )
-
+        # Annotate each point with heading
+        for i in range(len(x)):
+            if i % 10 == 0:
+                ax_main.text(
+                    x[i],
+                    y[i],
+                    f"θ={heading[i]:.2f}",
+                    fontsize=8,
+                    ha="right",
+                    va="bottom",
+                    color="blue",
+                )
 
 
         # Add 5% margin to axes to prevent arrows from being clipped
