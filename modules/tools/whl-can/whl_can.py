@@ -65,7 +65,7 @@ class KeyboardController:
         self.steering = 0.0
         self.speed_delta = speed_delta
         self.steering_delta = steering_delta
-        # check defination of in modules/common_msgs/chassis_msgs/chassis.proto
+        # check definition of in modules/common_msgs/chassis_msgs/chassis.proto
         self.gear_list = [3, 2, 0, 1]
         self.gear_str = ["P", "R", "N", "D"]
         self.gear_index = 0
