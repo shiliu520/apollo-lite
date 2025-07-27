@@ -14,8 +14,9 @@ startup --host_jvm_args="-Xmx2G"
 common --color=yes
 common --enable_bzlmod
 
-build --registry=https://raw.githubusercontent.com/wheelos/bazel-central-registry/main/
+# Prefer https://bcr.bazel.build/
 build --registry=https://bcr.bazel.build/
+build --registry=https://raw.githubusercontent.com/wheelos/bazel-central-registry/main/
 
 # Set up a shared cache to avoid repeated pulls from remote libraries
 build --repository_cache=/var/cache/bazel/repo_cache

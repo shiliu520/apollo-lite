@@ -126,6 +126,12 @@ class VehicleController {
   virtual void Throttle(double throttle) = 0;
 
   /*
+   * @brief drive with speed
+   * unit: m/s
+   */
+  virtual void Speed(double speed) {}
+
+  /*
    * @brief drive with new acceleration/deceleration:-7.0~7.0, unit:m/s^2,
    * acc:-7.0~7.0, unit:m/s^2
    */

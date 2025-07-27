@@ -59,17 +59,17 @@ TIMEZONE_CN=(
 
 # --- Constants: Container Resources ---
 # Resource limits (can be overridden by environment variables)
-DOCKER_CPUS="${DOCKER_CPUS:-6}"
+DOCKER_CPUS="${DOCKER_CPUS:-8}"
 DOCKER_MEMORY="${DOCKER_MEMORY:-8g}"
 
 # --- Constants: Image Name and Versions ---
 # Default development image versions based on architecture and distribution
 # can be overridden by environment variables.
-DOCKER_IMAGE_REPO=${DOCKER_IMAGE_REPO:="apolloauto/apollo"}
+DOCKER_IMAGE_REPO=${DOCKER_IMAGE_REPO:="wheelos/apollo"}
 WHL_DOCKER_IMAGE_REPO=${WHL_DOCKER_IMAGE_REPO:="wheelos"}
-DOCKER_IMAGE_TAG_X86_64=${DOCKER_IMAGE_TAG_X86_64:="dev-x86_64-18.04-20221124_1708"}
+DOCKER_IMAGE_TAG_X86_64=${DOCKER_IMAGE_TAG_X86_64:="dev-x86_64-20.04-20250713_1555"}
 DOCKER_IMAGE_TAG_X86_64_TESTING=${DOCKER_IMAGE_TAG_X86_64_TESTING:="dev-x86_64-20.04-20250710_2109"}
-DOCKER_IMAGE_TAG_AARCH64=${DOCKER_IMAGE_TAG_AARCH64:="dev-aarch64-20.04-20231024_1054"}
+DOCKER_IMAGE_TAG_AARCH64=${DOCKER_IMAGE_TAG_AARCH64:="dev-aarch64-20.04-20250714_2123"}
 
 # --- Script Global Variables (Modified by arguments/logic) ---
 DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG:=""} # Default empty
@@ -561,9 +561,10 @@ function main() {
     )
 
     # Add resource limits (cpus, memory)
+    # TODO(zero): move to CI, --memory will force OOM when the content exceeds the memory limit.
     local resource_opts=(
-        --cpus="${DOCKER_CPUS}"
-        --memory="${DOCKER_MEMORY}"
+        # --cpus="${DOCKER_CPUS}"
+        # --memory="${DOCKER_MEMORY}"
     )
 
     # --- Phase 4: Run the Container ---

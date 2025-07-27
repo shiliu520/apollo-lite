@@ -66,7 +66,7 @@ std::string LaneWaypoint::DebugString() const {
   if (lane == nullptr) {
     return "(lane is null)";
   }
-  return absl::StrCat("id = ", lane->id().id(), "  s = ", s);
+  return absl::StrCat("id = ", lane->id().id(), "  s = ", s, " l = ", l);
 }
 
 LaneBoundaryType::Type LeftBoundaryType(const LaneWaypoint& waypoint) {
@@ -446,7 +446,8 @@ void Path::InitWidth() {
 
       road_left_width_.push_back(FLAGS_default_lane_width / 2.0);
       road_right_width_.push_back(FLAGS_default_lane_width / 2.0);
-      // ADEBUG << "path point:" << point.DebugString() << " has invalid width.";
+      // ADEBUG << "path point:" << point.DebugString() << " has invalid
+      // width.";
     } else {
       const LaneWaypoint waypoint = point.lane_waypoints()[0];
       CHECK_NOTNULL(waypoint.lane);

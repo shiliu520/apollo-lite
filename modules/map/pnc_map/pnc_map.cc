@@ -244,6 +244,8 @@ bool PncMap::UpdateRoutingResponse(const routing::RoutingResponse &routing) {
   }
   int i = 0;
   for (size_t j = 0; j < route_indices_.size(); ++j) {
+    ADEBUG << "Route index: " << j
+           << ", segment: " << route_indices_[j].DebugString();
     while (i < request_waypoints.size() &&
            RouteSegments::WithinLaneSegment(route_indices_[j].segment,
                                             request_waypoints.Get(i))) {

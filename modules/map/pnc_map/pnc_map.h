@@ -27,8 +27,9 @@
 
 #include "gtest/gtest_prod.h"
 
-#include "modules/common_msgs/routing_msgs/routing.pb.h"
 #include "modules/common/vehicle_state/proto/vehicle_state.pb.h"
+#include "modules/common_msgs/routing_msgs/routing.pb.h"
+
 #include "modules/map/hdmap/hdmap.h"
 #include "modules/map/pnc_map/path.h"
 #include "modules/map/pnc_map/route_segments.h"
@@ -159,7 +160,12 @@ class PncMap {
   routing::RoutingResponse routing_;
   struct RouteIndex {
     LaneSegment segment;
-    std::array<int, 3> index;
+    std::array<int, 3> index;  // [road_index, passage_index, lane_index]
+
+    std::string DebugString() const {
+      return absl::StrCat("RouteIndex: [", segment.DebugString(), " | Index: [",
+                          index[0], ", ", index[1], ", ", index[2], "]]");
+    }
   };
   std::vector<RouteIndex> route_indices_;
   int range_start_ = 0;
