@@ -80,6 +80,29 @@ cc_library(
 )
 
 cc_library(
+    name = "lon_speed_controller",
+    srcs = ["lon_speed_controller.cc"],
+    hdrs = ["lon_speed_controller.h"],
+    copts = CONTROL_COPTS,
+    deps = [
+        ":controller_interface",
+        "//cyber",
+        "//modules/common/configs:vehicle_config_helper",
+        "//modules/common/status",
+        "//modules/common_msgs/control_msgs:control_cmd_cc_proto",
+        "//modules/common_msgs/control_msgs:input_debug_cc_proto",
+        "//modules/control/common:control_gflags",
+        "//modules/control/common:leadlag_controller",
+        "//modules/control/common:pid_controller",
+        "//modules/control/common:trajectory_analyzer",
+        "//modules/control/proto:control_conf_cc_proto",
+        "//modules/control/proto:lon_controller_conf_cc_proto",
+        "//modules/localization/common:localization_gflags",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
     name = "mpc_controller",
     srcs = ["mpc_controller.cc"],
     hdrs = ["mpc_controller.h"],
@@ -118,6 +141,7 @@ cc_library(
         ":controller_interface",
         ":lat_controller",
         ":lon_controller",
+        ":lon_speed_controller",
         ":mpc_controller",
         "@eigen",
     ],
@@ -132,6 +156,7 @@ cc_library(
         ":controller_interface",
         ":lat_controller",
         ":lon_controller",
+        ":lon_speed_controller",
         ":mpc_controller",
         "//cyber",
         "//modules/common/util:util_tool",
