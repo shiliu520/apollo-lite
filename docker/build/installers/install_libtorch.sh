@@ -133,6 +133,10 @@ function install_libtorch_cpp() {
     download_if_not_cached "${pkg_filename}" "${pkg_checksum}" "${pkg_uri}"
     mkdir -p /usr/local/libtorch
     tar -xzf "${pkg_filename}" -C /usr/local/libtorch --strip-components=1
+
+    # Add runtime library path
+    ensure_ld_path "/usr/local/libtorch/lib"
+
     rm -rf "${pkg_filename}"
 
     ldconfig

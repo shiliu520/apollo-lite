@@ -11,6 +11,7 @@ cc_library(
         "torch/csrc/api/include",
     ],
     linkopts = [
+        "-Wl,-rpath,/usr/local/libtorch/lib",
         "-L/usr/local/libtorch/lib",
         "-ltorch_cpu",
         "-ltorch",
