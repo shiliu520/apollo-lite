@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <bitset>
 
-#include "modules/drivers/canbus/sensor_gflags.h"
+#include "absl/strings/str_cat.h"
 
 namespace apollo {
 namespace drivers {
@@ -47,20 +47,8 @@ std::string Byte::byte_to_hex(const uint8_t value) {
 }
 
 std::string Byte::byte_to_hex(const uint32_t value) {
-  uint8_t high;
-  uint8_t low;
-  std::string result = "";
-  if (FLAGS_esd_can_extended_frame && value >= 65536) {
-    high = static_cast<uint8_t>((value >> 24) & 0xFF);
-    low = static_cast<uint8_t>((value >> 16) & 0xFF);
-    result += byte_to_hex(high);
-    result += byte_to_hex(low);
-  }
-  high = static_cast<uint8_t>((value >> 8) & 0xFF);
-  low = static_cast<uint8_t>(value & 0xFF);
-  result += byte_to_hex(high);
-  result += byte_to_hex(low);
-  return result;
+  // width=absl::kZeroPad8 ensures output is 8 digits, padded with zeros
+  return absl::StrCat(absl::Hex(value, absl::kZeroPad8));
 }
 
 std::string Byte::byte_to_binary(const uint8_t value) {

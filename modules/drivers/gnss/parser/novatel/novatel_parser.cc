@@ -571,14 +571,14 @@ bool NovatelParser::HandleBestVel(const novatel::BestVel* vel,
 }
 
 bool NovatelParser::HandleCorrImuData(const novatel::CorrImuData* imu) {
-  rfu_to_flu(imu->x_velocity_change * imu_measurement_hz_,
-             imu->y_velocity_change * imu_measurement_hz_,
-             imu->z_velocity_change * imu_measurement_hz_,
-             ins_.mutable_linear_acceleration());
-  rfu_to_flu(imu->x_angle_change * imu_measurement_hz_,
-             imu->y_angle_change * imu_measurement_hz_,
-             imu->z_angle_change * imu_measurement_hz_,
-             ins_.mutable_angular_velocity());
+  z_rot_90_ccw(imu->x_velocity_change * imu_measurement_hz_,
+               imu->y_velocity_change * imu_measurement_hz_,
+               imu->z_velocity_change * imu_measurement_hz_,
+               ins_.mutable_linear_acceleration());
+  z_rot_90_ccw(imu->x_angle_change * imu_measurement_hz_,
+               imu->y_angle_change * imu_measurement_hz_,
+               imu->z_angle_change * imu_measurement_hz_,
+               ins_.mutable_angular_velocity());
 
   double seconds = imu->gps_week * kSecondsPerWeek + imu->gps_seconds;
   if (ins_.measurement_time() != seconds) {
@@ -687,24 +687,24 @@ bool NovatelParser::HandleRawImuX(const novatel::RawImuX* imu) {
   imu_.set_measurement_time(time);
   switch (imu_frame_mapping_) {
     case 5:  // Default mapping.
-      rfu_to_flu(imu->x_velocity_change * accel_scale_,
-                 -imu->y_velocity_change_neg * accel_scale_,
-                 imu->z_velocity_change * accel_scale_,
-                 imu_.mutable_linear_acceleration());
-      rfu_to_flu(imu->x_angle_change * gyro_scale_,
-                 -imu->y_angle_change_neg * gyro_scale_,
-                 imu->z_angle_change * gyro_scale_,
-                 imu_.mutable_angular_velocity());
+      z_rot_90_ccw(imu->x_velocity_change * accel_scale_,
+                   -imu->y_velocity_change_neg * accel_scale_,
+                   imu->z_velocity_change * accel_scale_,
+                   imu_.mutable_linear_acceleration());
+      z_rot_90_ccw(imu->x_angle_change * gyro_scale_,
+                   -imu->y_angle_change_neg * gyro_scale_,
+                   imu->z_angle_change * gyro_scale_,
+                   imu_.mutable_angular_velocity());
       break;
     case 6:
-      rfu_to_flu(-imu->y_velocity_change_neg * accel_scale_,
-                 imu->x_velocity_change * accel_scale_,
-                 -imu->z_velocity_change * accel_scale_,
-                 imu_.mutable_linear_acceleration());
-      rfu_to_flu(-imu->y_angle_change_neg * gyro_scale_,
-                 imu->x_angle_change * gyro_scale_,
-                 -imu->z_angle_change * gyro_scale_,
-                 imu_.mutable_angular_velocity());
+      z_rot_90_ccw(-imu->y_velocity_change_neg * accel_scale_,
+                   imu->x_velocity_change * accel_scale_,
+                   -imu->z_velocity_change * accel_scale_,
+                   imu_.mutable_linear_acceleration());
+      z_rot_90_ccw(-imu->y_angle_change_neg * gyro_scale_,
+                   imu->x_angle_change * gyro_scale_,
+                   -imu->z_angle_change * gyro_scale_,
+                   imu_.mutable_angular_velocity());
       break;
     default:
       AERROR_EVERY(5) << "Unsupported IMU frame mapping: "
@@ -748,24 +748,24 @@ bool NovatelParser::HandleRawImu(const novatel::RawImu* imu) {
   imu_.set_measurement_time(time);
   switch (imu_frame_mapping_) {
     case 5:  // Default mapping.
-      rfu_to_flu(imu->x_velocity_change * accel_scale,
-                 -imu->y_velocity_change_neg * accel_scale,
-                 imu->z_velocity_change * accel_scale,
-                 imu_.mutable_linear_acceleration());
-      rfu_to_flu(imu->x_angle_change * gyro_scale,
-                 -imu->y_angle_change_neg * gyro_scale,
-                 imu->z_angle_change * gyro_scale,
-                 imu_.mutable_angular_velocity());
+      z_rot_90_ccw(imu->x_velocity_change * accel_scale,
+                   -imu->y_velocity_change_neg * accel_scale,
+                   imu->z_velocity_change * accel_scale,
+                   imu_.mutable_linear_acceleration());
+      z_rot_90_ccw(imu->x_angle_change * gyro_scale,
+                   -imu->y_angle_change_neg * gyro_scale,
+                   imu->z_angle_change * gyro_scale,
+                   imu_.mutable_angular_velocity());
       break;
     case 6:
-      rfu_to_flu(-imu->y_velocity_change_neg * accel_scale,
-                 imu->x_velocity_change * accel_scale,
-                 -imu->z_velocity_change * accel_scale,
-                 imu_.mutable_linear_acceleration());
-      rfu_to_flu(-imu->y_angle_change_neg * gyro_scale,
-                 imu->x_angle_change * gyro_scale,
-                 -imu->z_angle_change * gyro_scale,
-                 imu_.mutable_angular_velocity());
+      z_rot_90_ccw(-imu->y_velocity_change_neg * accel_scale,
+                   imu->x_velocity_change * accel_scale,
+                   -imu->z_velocity_change * accel_scale,
+                   imu_.mutable_linear_acceleration());
+      z_rot_90_ccw(-imu->y_angle_change_neg * gyro_scale,
+                   imu->x_angle_change * gyro_scale,
+                   -imu->z_angle_change * gyro_scale,
+                   imu_.mutable_angular_velocity());
       break;
     default:
       AERROR_EVERY(5) << "Unsupported IMU frame mapping: "

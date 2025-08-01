@@ -894,14 +894,14 @@ void HuaceParser::FillImu(const huace::GPCHCX& gpchcx, Imu* imu) {
 
   Point3D* linear_acceleration = imu->mutable_linear_acceleration();
   // Ensure correct coordinate transform (RFU to FLU)
-  rfu_to_flu(gpchcx.acc_x * kAccelerationGravity,
-             gpchcx.acc_y * kAccelerationGravity,
-             gpchcx.acc_z * kAccelerationGravity, linear_acceleration);
+  z_rot_90_ccw(gpchcx.acc_x * kAccelerationGravity,
+               gpchcx.acc_y * kAccelerationGravity,
+               gpchcx.acc_z * kAccelerationGravity, linear_acceleration);
 
   Point3D* angular_velocity = imu->mutable_angular_velocity();
   // Ensure correct coordinate transform (RFU to FLU)
-  rfu_to_flu(gpchcx.gyro_x * kDegToRad, gpchcx.gyro_y * kDegToRad,
-             gpchcx.gyro_z * kDegToRad, angular_velocity);
+  z_rot_90_ccw(gpchcx.gyro_x * kDegToRad, gpchcx.gyro_y * kDegToRad,
+               gpchcx.gyro_z * kDegToRad, angular_velocity);
 }
 
 void HuaceParser::FillHeading(const huace::GPCHCX& gpchcx, Heading* heading) {
@@ -982,14 +982,14 @@ void HuaceParser::FillIns(const huace::GPCHCX& gpchcx, Ins* ins) {
 
   // Assuming these are RFU gyro rates
   Point3D* angular_velocity = ins->mutable_angular_velocity();
-  rfu_to_flu(gpchcx.gyro_x * kDegToRad, gpchcx.gyro_y * kDegToRad,
-             gpchcx.gyro_z * kDegToRad, angular_velocity);
+  z_rot_90_ccw(gpchcx.gyro_x * kDegToRad, gpchcx.gyro_y * kDegToRad,
+               gpchcx.gyro_z * kDegToRad, angular_velocity);
 
   Point3D* linear_acceleration = ins->mutable_linear_acceleration();
   // Assuming these are RFU accelerations
-  rfu_to_flu(gpchcx.acc_x * kAccelerationGravity,
-             gpchcx.acc_y * kAccelerationGravity,
-             gpchcx.acc_z * kAccelerationGravity, linear_acceleration);
+  z_rot_90_ccw(gpchcx.acc_x * kAccelerationGravity,
+               gpchcx.acc_y * kAccelerationGravity,
+               gpchcx.acc_z * kAccelerationGravity, linear_acceleration);
 
   // Optional: Fill standard deviation fields if available in huace::GPCHCX
 }

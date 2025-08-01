@@ -64,17 +64,17 @@ TEST(CommonTest, AzimuthDegToYawRad) {
 
 TEST(CommonTest, RfuToFlu) {
   apollo::common::Point3D flu;
-  rfu_to_flu(1.0, 2.0, 3.0, &flu);
+  z_rot_90_ccw(1.0, 2.0, 3.0, &flu);
   EXPECT_FLOAT_EQ(flu.x(), 2.0);
   EXPECT_FLOAT_EQ(flu.y(), -1.0);
   EXPECT_FLOAT_EQ(flu.z(), 3.0);
 
-  rfu_to_flu(-1.0, 0.5, -2.0, &flu);
+  z_rot_90_ccw(-1.0, 0.5, -2.0, &flu);
   EXPECT_FLOAT_EQ(flu.x(), 0.5);
   EXPECT_FLOAT_EQ(flu.y(), 1.0);
   EXPECT_FLOAT_EQ(flu.z(), -2.0);
 
-  rfu_to_flu(0.0, 0.0, 0.0, &flu);
+  z_rot_90_ccw(0.0, 0.0, 0.0, &flu);
   EXPECT_FLOAT_EQ(flu.x(), 0.0);
   EXPECT_FLOAT_EQ(flu.y(), 0.0);
   EXPECT_FLOAT_EQ(flu.z(), 0.0);
