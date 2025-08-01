@@ -22,7 +22,7 @@ cc_library(
         "canbus_consts.h",
     ],
     deps = [
-        "//modules/drivers/canbus:sensor_gflags",
+        "@com_google_absl//absl/strings",
     ],
 )
 

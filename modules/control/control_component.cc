@@ -16,6 +16,7 @@
 #include "modules/control/control_component.h"
 
 #include "absl/strings/str_cat.h"
+
 #include "cyber/common/file.h"
 #include "cyber/common/log.h"
 #include "cyber/time/clock.h"
@@ -283,7 +284,7 @@ bool ControlComponent::Proc() {
   chassis_reader_->Observe();
   const auto &chassis_msg = chassis_reader_->GetLatestObserved();
   if (chassis_msg == nullptr) {
-    AERROR << "Chassis msg is not ready!";
+    AERROR_EVERY(100) << "Chassis msg is not ready!";
     return false;
   }
 

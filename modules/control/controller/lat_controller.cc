@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "Eigen/LU"
-#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 
 #include "cyber/common/log.h"
 #include "cyber/time/clock.h"
@@ -58,22 +58,25 @@ std::string GetLogFileName() {
 }
 
 void WriteHeaders(std::ofstream &file_stream) {
-  file_stream << "current_lateral_error,"
-              << "current_ref_heading,"
-              << "current_heading,"
-              << "current_heading_error,"
-              << "heading_error_rate,"
+  file_stream << "lateral_error,"
               << "lateral_error_rate,"
-              << "current_curvature,"
+              << "lateral_error_feedback,"
+              << "heading,"
+              << "ref_heading,"
+              << "heading_error,"
+              << "heading_error_rate,"
+              << "heading_error_feedback,"
+              << "curvature,"
               << "steer_angle,"
               << "steer_angle_feedforward,"
+              << "steer_angle_feedback,"
+              << "steer_angle_feedback_augment,"
+              << "steering_percentage,"
               << "steer_angle_lateral_contribution,"
               << "steer_angle_lateral_rate_contribution,"
               << "steer_angle_heading_contribution,"
               << "steer_angle_heading_rate_contribution,"
-              << "steer_angle_feedback,"
-              << "steering_position,"
-              << "v" << std::endl;
+              << "linear_velocity" << std::endl;
 }
 }  // namespace
 
@@ -148,16 +151,23 @@ bool LatController::LoadControlConf(const ControlConf *control_conf) {
 
 void LatController::ProcessLogs(const SimpleLateralDebug *debug,
                                 const canbus::Chassis *chassis) {
-  const std::string log_str = absl::StrCat(
-      debug->lateral_error(), ",", debug->ref_heading(), ",", debug->heading(),
-      ",", debug->heading_error(), ",", debug->heading_error_rate(), ",",
-      debug->lateral_error_rate(), ",", debug->curvature(), ",",
-      debug->steer_angle(), ",", debug->steer_angle_feedforward(), ",",
-      debug->steer_angle_lateral_contribution(), ",",
-      debug->steer_angle_lateral_rate_contribution(), ",",
-      debug->steer_angle_heading_contribution(), ",",
-      debug->steer_angle_heading_rate_contribution(), ",",
-      debug->steer_angle_feedback(), ",", chassis->steering_percentage(), ",",
+  const std::string log_str = absl::StrFormat(
+      "%.6f,%.6f,%.6f,"            // Lateral related
+      "%.6f,%.6f,%.6f,%.6f,%.6f,"  // Heading related
+      "%.6f,"                      // Curvature
+      "%.6f,%.6f,%.6f,%.6f,"       // Steer angle
+      "%.6f,%.6f,%.6f,%.6f,"       // Steer angle contributions
+      "%.6f,%.6f",                 // Chassis and vehicle state
+      debug->lateral_error(), debug->lateral_error_rate(),
+      debug->lateral_error_feedback(), debug->heading(), debug->ref_heading(),
+      debug->heading_error(), debug->heading_error_rate(),
+      debug->heading_error_feedback(), debug->curvature(), debug->steer_angle(),
+      debug->steer_angle_feedforward(), debug->steer_angle_feedback(),
+      debug->steer_angle_feedback_augment(), chassis->steering_percentage(),
+      debug->steer_angle_lateral_contribution(),
+      debug->steer_angle_lateral_rate_contribution(),
+      debug->steer_angle_heading_contribution(),
+      debug->steer_angle_heading_rate_contribution(),
       injector_->vehicle_state()->linear_velocity());
   if (FLAGS_enable_csv_debug) {
     steer_log_file_ << log_str << std::endl;
