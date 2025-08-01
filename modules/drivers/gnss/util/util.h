@@ -86,10 +86,9 @@ constexpr double azimuth_deg_to_yaw_rad(double azimuth) {
   return (90.0 - azimuth) * kDegToRad;
 }
 
-// A helper that fills an Point3D object (which uses the FLU frame) using RFU
-// measurements.
-inline void rfu_to_flu(double r, double f, double u,
-                       ::apollo::common::Point3D *flu) {
+// Rotating around the z-axis counterclockwise by 90 degrees.
+inline void z_rot_90_ccw(double r, double f, double u,
+                         ::apollo::common::Point3D *flu) {
   flu->set_x(f);
   flu->set_y(-r);
   flu->set_z(u);
