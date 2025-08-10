@@ -33,7 +33,7 @@ function geo_specific_config() {
     info "Setup geolocation specific configurations for ${geo}"
     if [[ "${geo}" == "cn" ]]; then
         info "GeoLocation settings for Mainland China"
-        GEO_REGISTRY="registry.baidubce.com"
+        GEO_REGISTRY="registry.cn-hangzhou.aliyuncs.com"
     else
         warning "GeoLocation settings for ${geo} is not ready, fallback to default"
     fi

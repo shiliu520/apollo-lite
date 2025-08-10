@@ -66,7 +66,6 @@ DOCKER_MEMORY="${DOCKER_MEMORY:-8g}"
 # Default development image versions based on architecture and distribution
 # can be overridden by environment variables.
 DOCKER_IMAGE_REPO=${DOCKER_IMAGE_REPO:="wheelos/apollo"}
-WHL_DOCKER_IMAGE_REPO=${WHL_DOCKER_IMAGE_REPO:="wheelos"}
 DOCKER_IMAGE_TAG_X86_64=${DOCKER_IMAGE_TAG_X86_64:="dev-x86_64-20.04-20250713_1555"}
 DOCKER_IMAGE_TAG_X86_64_TESTING=${DOCKER_IMAGE_TAG_X86_64_TESTING:="dev-x86_64-20.04-20250710_2109"}
 DOCKER_IMAGE_TAG_AARCH64=${DOCKER_IMAGE_TAG_AARCH64:="dev-aarch64-20.04-20250714_2123"}
@@ -254,11 +253,7 @@ function determine_dev_image() {
         esac
     fi
 
-    if [[ "${CUSTOM_DIST}" == "testing" ]]; then
-        DEV_IMAGE="${WHL_DOCKER_IMAGE_REPO}/${version}"
-    else
-        DEV_IMAGE="${DOCKER_IMAGE_REPO}:${version}"
-    fi
+    DEV_IMAGE="${DOCKER_IMAGE_REPO}:${version}"
 
     info "Determined development image: ${DEV_IMAGE}"
 }
@@ -395,13 +390,15 @@ function docker_pull() {
     local base_image_name="$1"
     local __final_image_var_name="$2"
 
+    local base_image_repo="${base_image_name}"
+    if [[ "$(image_contains_registry "${base_image_name}")" == "1" ]]; then
+      base_image_repo="$(echo "${base_image_name}" | cut -d'/' -f2-)"
+    fi
     local pull_candidate_image_name=""
-    if [[ "${CUSTOM_DIST}" == "testing" && "${TARGET_ARCH}" == "x86_64" ]]; then
-        pull_candidate_image_name="registry.cn-hangzhou.aliyuncs.com/${base_image_name}"
-    elif [[ -v GEO_REGISTRY && -n "${GEO_REGISTRY}" ]]; then
-        pull_candidate_image_name="${GEO_REGISTRY}/${base_image_name}"
+    if [[ -v GEO_REGISTRY && -n "${GEO_REGISTRY}" ]]; then
+      pull_candidate_image_name="${GEO_REGISTRY}/${base_image_repo}"
     else
-        pull_candidate_image_name="${base_image_name}"
+      pull_candidate_image_name="${base_image_name}"
     fi
 
     local image_actually_used_or_pulled=""
