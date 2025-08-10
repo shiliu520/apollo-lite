@@ -306,3 +306,23 @@ py_proto_library(
     name = "radar_py_pb2",
     deps = [":radar_proto"],
 )
+
+cc_proto_library(
+    name = "nano_radar_cc_proto",
+    deps = [
+        ":nano_radar_proto",
+    ],
+)
+
+proto_library(
+    name = "nano_radar_proto",
+    srcs = ["nano_radar.proto"],
+    deps = [
+        "//modules/common_msgs/basic_msgs:header_proto",
+    ],
+)
+
+py_proto_library(
+    name = "nano_radar_py_pb2",
+    deps = [":nano_radar_proto"],
+)

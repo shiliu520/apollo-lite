@@ -7,7 +7,7 @@ config_base {
   source_type: ONLINE_LIDAR
 }
 
-# sample: "RS16", "RS32", "RS80", "RS128", "RSBP", "RSHELIOS", "RSHELIOS_16P", "RSM1"
+# sample: "RS16", "RS32", "RS80", "RS128", "RSBP", "RSHELIOS", "RSHELIOS_16P", "RSM1", "RSM2", "RSM3", "RSE1", "RSMX", "RSAIRY"
 model: "RSM1"
 ip: "192.168.1.200"
 msop_port: 6699

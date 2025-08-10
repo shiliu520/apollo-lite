@@ -49,41 +49,105 @@ bool VanjeelidarComponent::Init() {
 
   driver_ptr_ = std::make_shared<::vanjee::lidar::LidarDriver<PointCloudMsg>>();
 
+  // TODO(All): implement in a more elegant way
   ::vanjee::lidar::WJDecoderParam decoder_param;
-  decoder_param.publish_mode = conf_.publish_mode();
-  decoder_param.min_distance = conf_.min_distance();
-  decoder_param.max_distance = conf_.max_distance();
-  decoder_param.start_angle = conf_.start_angle();
-  decoder_param.end_angle = conf_.end_angle();
-  decoder_param.use_lidar_clock = conf_.use_lidar_clock();
-  decoder_param.dense_points = conf_.dense_points();
-  decoder_param.wait_for_difop = conf_.wait_for_difop();
-  decoder_param.config_from_file = conf_.config_from_file();
-  decoder_param.angle_path_ver = conf_.angle_path();
-  decoder_param.point_cloud_enable = conf_.point_cloud_enable();
+  decoder_param.config_from_file =
+      conf_.driver_param().decoder_param().config_from_file();
+  decoder_param.wait_for_difop =
+      conf_.driver_param().decoder_param().wait_for_difop();
+  decoder_param.min_distance =
+      conf_.driver_param().decoder_param().min_distance();
+  decoder_param.max_distance =
+      conf_.driver_param().decoder_param().max_distance();
+  decoder_param.start_angle =
+      conf_.driver_param().decoder_param().start_angle();
+  decoder_param.end_angle = conf_.driver_param().decoder_param().end_angle();
+  decoder_param.use_lidar_clock =
+      conf_.driver_param().decoder_param().use_lidar_clock();
+  decoder_param.dense_points =
+      conf_.driver_param().decoder_param().dense_points();
+  decoder_param.ts_first_point =
+      conf_.driver_param().decoder_param().ts_first_point();
+  decoder_param.use_offset_timestamp =
+      conf_.driver_param().decoder_param().use_offset_timestamp();
+  decoder_param.publish_mode =
+      conf_.driver_param().decoder_param().publish_mode();
+  decoder_param.rpm = conf_.driver_param().decoder_param().rpm();
+  decoder_param.angle_path_ver =
+      conf_.driver_param().decoder_param().angle_path_ver();
+  decoder_param.angle_path_hor =
+      conf_.driver_param().decoder_param().angle_path_hor();
+  decoder_param.imu_param_path =
+      conf_.driver_param().decoder_param().imu_param_path();
+  decoder_param.point_cloud_enable =
+      conf_.driver_param().decoder_param().point_cloud_enable();
+  decoder_param.imu_enable = conf_.driver_param().decoder_param().imu_enable();
+  decoder_param.laser_scan_enable =
+      conf_.driver_param().decoder_param().laser_scan_enable();
+  decoder_param.device_ctrl_state_enable =
+      conf_.driver_param().decoder_param().device_ctrl_state_enable();
+  decoder_param.device_ctrl_cmd_enable =
+      conf_.driver_param().decoder_param().device_ctrl_cmd_enable();
+  decoder_param.hide_points_range =
+      conf_.driver_param().decoder_param().hide_points_range();
+
+  ::vanjee::lidar::WJTransfromParam transform_param;
+  if (conf_.driver_param().decoder_param().has_transform_param()) {
+    transform_param.x =
+        conf_.driver_param().decoder_param().transform_param().x();
+    transform_param.y =
+        conf_.driver_param().decoder_param().transform_param().y();
+    transform_param.z =
+        conf_.driver_param().decoder_param().transform_param().z();
+    transform_param.roll =
+        conf_.driver_param().decoder_param().transform_param().roll();
+    transform_param.pitch =
+        conf_.driver_param().decoder_param().transform_param().pitch();
+    transform_param.yaw =
+        conf_.driver_param().decoder_param().transform_param().yaw();
+    decoder_param.transform_param = transform_param;
+  }
 
   ::vanjee::lidar::WJInputParam input_param;
-  input_param.connect_type = conf_.connect_type();
-  input_param.host_msop_port = conf_.host_msop_port();
-  input_param.lidar_msop_port = conf_.lidar_msop_port();
-  input_param.host_address = conf_.host_address();
-  input_param.lidar_address = conf_.lidar_address();
+  input_param.connect_type = conf_.driver_param().input_param().connect_type();
+  input_param.host_msop_port =
+      conf_.driver_param().input_param().host_msop_port();
+  input_param.lidar_msop_port =
+      conf_.driver_param().input_param().lidar_msop_port();
+  input_param.difop_port = conf_.driver_param().input_param().difop_port();
+  input_param.host_address = conf_.driver_param().input_param().host_address();
+  input_param.lidar_address =
+      conf_.driver_param().input_param().lidar_address();
+  input_param.group_address =
+      conf_.driver_param().input_param().group_address();
+  input_param.pcap_path = conf_.driver_param().input_param().pcap_path();
+  input_param.pcap_repeat = conf_.driver_param().input_param().pcap_repeat();
+  input_param.pcap_rate = conf_.driver_param().input_param().pcap_rate();
+  input_param.use_vlan = conf_.driver_param().input_param().use_vlan();
+  input_param.user_layer_bytes =
+      conf_.driver_param().input_param().user_layer_bytes();
+  input_param.tail_layer_bytes =
+      conf_.driver_param().input_param().tail_layer_bytes();
 
   ::vanjee::lidar::WJDriverParam driver_param;
 
   driver_param.input_param = input_param;
   driver_param.decoder_param = decoder_param;
 
-  driver_param.lidar_type = ::vanjee::lidar::strToLidarType(conf_.model());
-  if (conf_.config_base().source_type() ==
-      LidarConfigBase_SourceType_RAW_PACKET) {
-    driver_param.input_type = InputType::RAW_PACKET;
-  } else if (conf_.config_base().source_type() ==
-             LidarConfigBase_SourceType_ONLINE_LIDAR) {
-    driver_param.input_type = InputType::ONLINE_LIDAR;
-    // driver_ptr_->regPacketCallback(
-    //     std::bind(&VanjeelidarComponent::VanjeePacketCallback, this,
-    //               std::placeholders::_1));
+  driver_param.lidar_type =
+      ::vanjee::lidar::strToLidarType(conf_.driver_param().lidar_type());
+  if (conf_.driver_param().has_input_type()) {
+    driver_param.input_type =
+        static_cast<InputType>(conf_.driver_param().input_type());
+  } else {
+    // use the common config
+    if (conf_.config_base().source_type() ==
+        LidarConfigBase_SourceType_RAW_PACKET) {
+      driver_param.input_type = InputType::RAW_PACKET;
+    } else if (conf_.config_base().source_type() ==
+               LidarConfigBase_SourceType_ONLINE_LIDAR) {
+      driver_param.input_type = InputType::ONLINE_LIDAR;
+    }
   }
 
   driver_ptr_->regScanDataCallback(

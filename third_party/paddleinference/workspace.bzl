@@ -12,6 +12,7 @@ def repo():
         name = "paddleinference-x86_64",
         sha256 = "ed4f9b5757a81351e869d31e8371393340fdfd183b83a8e532a6b2951dfae8c4",
         strip_prefix = "paddleinference",
+        build_file = clean_dep("//third_party/paddleinference:paddleinference-x86_64.BUILD"),
         urls = ["https://apollo-pkg-beta.cdn.bcebos.com/archive/paddleinference-cu111-x86.tar.gz"],
     )
 
@@ -19,5 +20,6 @@ def repo():
         name = "paddleinference-aarch64",
         sha256 = "ac5f124650e61d8d4b3552cf070258bc2464293bc31d7416ee99e9ba9693e3ee",
         strip_prefix = "paddleinference",
+        build_file = clean_dep("//third_party/paddleinference:paddleinference-aarch64.BUILD"),
         urls = ["https://apollo-pkg-beta.bj.bcebos.com/archive/paddleinference-linux-aarch64-2.0.0.tar.gz"],
     )
