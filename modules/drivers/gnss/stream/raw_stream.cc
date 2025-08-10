@@ -492,7 +492,14 @@ void RawStream::RtkSpin() {
     return;
   }
   while (cyber::OK()) {
-    size_t length = in_rtk_stream_->read(buffer_rtk_, BUFFER_SIZE);
+    size_t length = 0;
+    try {
+      length = in_rtk_stream_->read(buffer_rtk_, BUFFER_SIZE);
+    } catch (std::runtime_error &e) {
+      AERROR << "Read RTK stream failed: " << e.what()
+             << ". Will retry reading next time. "
+             << "Please check if the network connection is stable.";
+    }
     if (length > 0) {
       if (rtcm_stream_ != nullptr) {
         rtcm_stream_->write(reinterpret_cast<const char *>(buffer_rtk_),
