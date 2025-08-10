@@ -177,7 +177,12 @@ Status LonSpeedController::ComputeControlCommand(
     speed_offset = station_leadlag_controller_.Control(speed_offset, ts);
   }
 
-  double desired_speed_cmd = debug->preview_speed_reference() + speed_offset;
+  double desired_speed_cmd = 0.0;
+  if (FLAGS_enable_speed_station_preview) {
+    desired_speed_cmd = debug->preview_speed_reference() + speed_offset;
+  } else {
+    desired_speed_cmd = debug->speed_reference() + speed_offset;
+  }
 
   // Check the steer command in reverse trajectory if the current steer target
   // is larger than previous target, free the acceleration command, wait for
