@@ -30,11 +30,10 @@
 #include <thread>
 #include <vector>
 
-#include "cyber/common/macros.h"
-#include "cyber/cyber.h"
-
 #include "modules/common_msgs/basic_msgs/error_code.pb.h"
 
+#include "cyber/common/macros.h"
+#include "cyber/cyber.h"
 #include "modules/drivers/canbus/can_client/can_client.h"
 #include "modules/drivers/canbus/can_comm/message_manager.h"
 #include "modules/drivers/canbus/common/canbus_consts.h"

@@ -16,16 +16,13 @@
 
 #include "modules/perception/fusion/lib/data_fusion/all_latest_fusion/all_latest_fusion.h"
 
-
 #include "modules/common/util/string_util.h"
 #include "modules/perception/fusion/base/sensor_data_manager.h"
 #include "modules/perception/pipeline/data_frame.h"
 
-
 namespace apollo {
 namespace perception {
 namespace fusion {
-
 
 bool AllLatestFusion::Init(const StageConfig& stage_config) {
   if (!Initialize(stage_config)) {
@@ -47,12 +44,10 @@ bool AllLatestFusion::Process(DataFrame* data_frame) {
   }
 
   FusionFrame* fusion_frame = data_frame->fusion_frame;
-  if (fusion_frame == nullptr)
-    return false;
+  if (fusion_frame == nullptr) return false;
 
   base::FrameConstPtr sensor_frame = fusion_frame->frame;
-  if (sensor_frame == nullptr)
-    return false;
+  if (sensor_frame == nullptr) return false;
 
   SensorDataManager* sensor_data_manager = SensorDataManager::Instance();
   // 1. save frame data

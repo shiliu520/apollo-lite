@@ -23,11 +23,9 @@
 #include "modules/perception/fusion/base/fusion_frame.h"
 #include "modules/perception/pipeline/stage.h"
 
-
 namespace apollo {
 namespace perception {
 namespace fusion {
-
 
 class AllLatestFusion : public pipeline::Stage {
  public:
@@ -62,7 +60,6 @@ class AllLatestFusion : public pipeline::Stage {
 
   std::string main_sensor_;
 };
-
 
 }  // namespace fusion
 }  // namespace perception

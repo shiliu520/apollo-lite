@@ -28,9 +28,10 @@
 #include <unordered_map>
 #include <vector>
 
+#include "modules/common_msgs/basic_msgs/error_code.pb.h"
+
 #include "cyber/common/log.h"
 #include "cyber/time/time.h"
-#include "modules/common_msgs/basic_msgs/error_code.pb.h"
 #include "modules/drivers/canbus/can_comm/protocol_data.h"
 #include "modules/drivers/canbus/common/byte.h"
 
@@ -104,6 +105,31 @@ class MessageManager {
    */
   common::ErrorCode GetSensorData(SensorType *const sensor_data);
 
+  /**
+   * @brief get current latency of meesage
+   *
+   * @param message_id the id of the message
+   */
+  int64_t GetCurrentLatencyById(const uint32_t message_id);
+
+  /**
+   * @brief get period of message
+   *
+   * @param message_id the id of the message
+   */
+  int64_t GetPeriodById(const uint32_t message_id);
+
+  /**
+   * @brief check if message is timeout
+   *
+   * @param message_id the id of the message
+   * @param timeout_threshold_ratio the ratio of timeout threshold to period
+   * @return false if message is timeout or message_id is invalid, true
+   * otherwise
+   */
+  bool CheckMessageTimeout(const uint32_t message_id,
+                           const double timeout_threshold_ratio);
+
   /*
    * @brief reset send messages
    */
@@ -165,9 +191,9 @@ void MessageManager<SensorType>::AddSendProtocolData() {
 }
 
 template <typename SensorType>
-ProtocolData<SensorType>
-    *MessageManager<SensorType>::GetMutableProtocolDataById(
-        const uint32_t message_id) {
+ProtocolData<SensorType> *
+MessageManager<SensorType>::GetMutableProtocolDataById(
+    const uint32_t message_id) {
   if (protocol_data_map_.find(message_id) == protocol_data_map_.end()) {
     ADEBUG << "Unable to get protocol data because of invalid message_id:"
            << Byte::byte_to_hex(message_id);
@@ -227,6 +253,52 @@ ErrorCode MessageManager<SensorType>::GetSensorData(
   std::lock_guard<std::mutex> lock(sensor_data_mutex_);
   sensor_data->CopyFrom(sensor_data_);
   return ErrorCode::OK;
+}
+
+template <typename SensorType>
+int64_t MessageManager<SensorType>::GetCurrentLatencyById(
+    const uint32_t message_id) {
+  const auto it = check_ids_.find(message_id);
+  if (it == check_ids_.end()) {
+    AERROR << "Message ID " << message_id << " not found.";
+    return -1;
+  }
+  // Get the current time in microseconds
+  const int64_t now = cyber::Time::Now().ToNanosecond() / 1e3;
+  // Calculate the latency
+  const int64_t latency = now - it->second.last_time;
+  return latency;
+}
+
+template <typename SensorType>
+int64_t MessageManager<SensorType>::GetPeriodById(const uint32_t message_id) {
+  const auto it = check_ids_.find(message_id);
+  if (it == check_ids_.end()) {
+    AERROR << "Message ID " << message_id << " not found.";
+    return -1;
+  }
+  // Return the period for the specified message ID
+  return it->second.period;
+}
+
+template <typename SensorType>
+bool MessageManager<SensorType>::CheckMessageTimeout(
+    const uint32_t message_id, const double timeout_threshold_ratio) {
+  const auto latency = GetCurrentLatencyById(message_id);
+  const auto period = GetPeriodById(message_id);
+  if (latency < 0 || period < 0) {
+    AERROR << "Invalid latency or period for message ID: " << message_id;
+    return false;
+  }
+
+  // Check if the latency exceeds the timeout threshold
+  if (latency - period > (timeout_threshold_ratio * period)) {
+    AERROR << "Message ID " << message_id << " is timeout. Latency: " << latency
+           << ", Period: " << period
+           << ", Threshold Ratio: " << timeout_threshold_ratio;
+    return false;
+  }
+  return true;
 }
 
 template <typename SensorType>
