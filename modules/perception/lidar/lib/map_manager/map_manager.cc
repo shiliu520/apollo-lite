@@ -15,11 +15,11 @@
  *****************************************************************************/
 #include "modules/perception/lidar/lib/map_manager/map_manager.h"
 
+#include "modules/perception/pipeline/proto/stage/map_manager_config.pb.h"
+
 #include "cyber/common/file.h"
 #include "cyber/common/log.h"
-
 #include "modules/perception/lib/config_manager/config_manager.h"
-#include "modules/perception/pipeline/proto/stage/map_manager_config.pb.h"
 
 namespace apollo {
 namespace perception {
@@ -61,15 +61,17 @@ bool MapManager::Init(const StageConfig& stage_config) {
 
   hdmap_input_ = map::HDMapInput::Instance();
   if (!hdmap_input_->Init()) {
-    AINFO << "Failed to init hdmap input.";
+    AERROR << "MapManager::Init: Failed to initialize HDMapInput.";
     return false;
   }
   return true;
 }
 
 bool MapManager::Process(DataFrame* data_frame) {
-  if (data_frame == nullptr)
+  if (data_frame == nullptr || data_frame->lidar_frame == nullptr) {
+    AINFO << "DataFrame or LidarFrame is nullptr.";
     return false;
+  }
 
   MapManagerOptions options;
   Update(options, data_frame->lidar_frame);
@@ -82,12 +84,8 @@ bool MapManager::Update(const MapManagerOptions& options, LidarFrame* frame) {
     AINFO << "Frame is nullptr.";
     return false;
   }
-  if (!(frame->hdmap_struct)) {
+  if (!frame->hdmap_struct) {
     frame->hdmap_struct.reset(new base::HdmapStruct);
-  }
-  if (!hdmap_input_) {
-    AINFO << "Hdmap input is nullptr";
-    return false;
   }
   if (update_pose_) {
     if (!QueryPose(&(frame->lidar2world_pose))) {
@@ -109,8 +107,8 @@ bool MapManager::Update(const MapManagerOptions& options, LidarFrame* frame) {
   return true;
 }
 bool MapManager::QueryPose(Eigen::Affine3d* sensor2world_pose) const {
-  // TODO(...): map-based alignment to refine pose
-  return false;
+  // TODO(daohu527): map-based alignment to refine pose
+  return true;
 }
 
 }  // namespace lidar

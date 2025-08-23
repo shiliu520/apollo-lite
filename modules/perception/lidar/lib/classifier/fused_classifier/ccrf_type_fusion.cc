@@ -17,12 +17,13 @@
 
 #include <limits>
 
+#include "modules/perception/pipeline/proto/plugin/ccrf_type_fusion_config.pb.h"
+
 #include "cyber/common/file.h"
 #include "cyber/common/log.h"
 #include "modules/perception/base/object_types.h"
 #include "modules/perception/base/point_cloud.h"
 #include "modules/perception/lib/config_manager/config_manager.h"
-#include "modules/perception/pipeline/proto/plugin/ccrf_type_fusion_config.pb.h"
 
 namespace apollo {
 namespace perception {

@@ -507,7 +507,6 @@ Status LatController::ComputeControlCommand(
   const double steer_angle_feedback = -(matrix_k_ * matrix_state_)(0, 0) * 180 /
                                       M_PI * steer_ratio_ /
                                       steer_single_direction_max_degree_ * 100;
-
   const double steer_angle_feedforward = ComputeFeedForward(debug->curvature());
 
   double steer_angle = 0.0;
@@ -623,19 +622,15 @@ Status LatController::ComputeControlCommand(
   const double steer_angle_lateral_contribution =
       -matrix_k_(0, 0) * matrix_state_(0, 0) * 180 / M_PI * steer_ratio_ /
       steer_single_direction_max_degree_ * 100;
-
   const double steer_angle_lateral_rate_contribution =
       -matrix_k_(0, 1) * matrix_state_(1, 0) * 180 / M_PI * steer_ratio_ /
       steer_single_direction_max_degree_ * 100;
-
   const double steer_angle_heading_contribution =
       -matrix_k_(0, 2) * matrix_state_(2, 0) * 180 / M_PI * steer_ratio_ /
       steer_single_direction_max_degree_ * 100;
-
   const double steer_angle_heading_rate_contribution =
       -matrix_k_(0, 3) * matrix_state_(3, 0) * 180 / M_PI * steer_ratio_ /
       steer_single_direction_max_degree_ * 100;
-
   debug->set_heading(driving_orientation_);
   debug->set_steer_angle(steer_angle);
   debug->set_steer_angle_feedforward(steer_angle_feedforward);

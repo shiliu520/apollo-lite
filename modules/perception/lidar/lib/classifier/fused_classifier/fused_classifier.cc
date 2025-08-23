@@ -17,10 +17,11 @@
 
 #include <vector>
 
+#include "modules/perception/pipeline/proto/stage/fused_classifier_config.pb.h"
+
 #include "cyber/common/file.h"
 #include "modules/perception/lidar/lib/classifier/fused_classifier/ccrf_type_fusion.h"
 #include "modules/perception/pipeline/plugin_factory.h"
-#include "modules/perception/pipeline/proto/stage/fused_classifier_config.pb.h"
 
 namespace apollo {
 namespace perception {
@@ -66,31 +67,28 @@ bool FusedClassifier::Init(const StageConfig& stage_config) {
 
   fused_classifier_config_ = stage_config.fused_classifier_config();
 
-  temporal_window_        = fused_classifier_config_.temporal_window();
+  temporal_window_ = fused_classifier_config_.temporal_window();
   enable_temporal_fusion_ = fused_classifier_config_.enable_temporal_fusion();
-  use_tracked_objects_    = fused_classifier_config_.use_tracked_objects();
+  use_tracked_objects_ = fused_classifier_config_.use_tracked_objects();
   one_shot_fusion_method_ = fused_classifier_config_.one_shot_fusion_method();
   sequence_fusion_method_ = fused_classifier_config_.sequence_fusion_method();
 
   // create plugins
-  one_shot_fuser_ptr_ =
-      pipeline::dynamic_unique_cast<BaseOneShotTypeFusion>(
-          pipeline::PluginFactory::CreatePlugin(
-              plugin_config_map_[PluginType::CCRF_ONESHOT_TYPE_FUSION]));
+  one_shot_fuser_ptr_ = pipeline::dynamic_unique_cast<BaseOneShotTypeFusion>(
+      pipeline::PluginFactory::CreatePlugin(
+          plugin_config_map_[PluginType::CCRF_ONESHOT_TYPE_FUSION]));
   CHECK_NOTNULL(one_shot_fuser_ptr_);
 
-  sequence_fuser_ptr_ =
-      pipeline::dynamic_unique_cast<BaseSequenceTypeFusion>(
-          pipeline::PluginFactory::CreatePlugin(
-              plugin_config_map_[PluginType::CCRF_SEQUENCE_TYPE_FUSION]));
+  sequence_fuser_ptr_ = pipeline::dynamic_unique_cast<BaseSequenceTypeFusion>(
+      pipeline::PluginFactory::CreatePlugin(
+          plugin_config_map_[PluginType::CCRF_SEQUENCE_TYPE_FUSION]));
   CHECK_NOTNULL(sequence_fuser_ptr_);
 
   return true;
 }
 
 bool FusedClassifier::Process(DataFrame* data_frame) {
-  if (data_frame == nullptr)
-    return false;
+  if (data_frame == nullptr) return false;
 
   LidarFrame* lidar_frame = data_frame->lidar_frame;
   if (lidar_frame == nullptr) {

@@ -47,8 +47,7 @@ bool ObjectBuilder::Init(const StageConfig& stage_config) {
 }
 
 bool ObjectBuilder::Process(DataFrame* data_frame) {
-  if (data_frame == nullptr || data_frame->lidar_frame == nullptr)
-    return false;
+  if (data_frame == nullptr || data_frame->lidar_frame == nullptr) return false;
 
   ObjectBuilderOptions options;
   Build(options, data_frame->lidar_frame);

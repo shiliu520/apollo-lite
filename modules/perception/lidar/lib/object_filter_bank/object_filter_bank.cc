@@ -15,11 +15,12 @@
  *****************************************************************************/
 #include "modules/perception/lidar/lib/object_filter_bank/object_filter_bank.h"
 
+#include "modules/perception/pipeline/proto/stage/object_filter_bank_config.pb.h"
+
 #include "cyber/common/file.h"
 #include "modules/perception/lib/config_manager/config_manager.h"
 #include "modules/perception/lidar/common/lidar_log.h"
 #include "modules/perception/pipeline/plugin_factory.h"
-#include "modules/perception/pipeline/proto/stage/object_filter_bank_config.pb.h"
 
 namespace apollo {
 namespace perception {
@@ -67,7 +68,7 @@ bool ObjectFilterBank::Init(const StageConfig& stage_config) {
   filter_ptrs_.clear();
   for (const auto& plugin_config : stage_config.plugin_config()) {
     auto filter = pipeline::dynamic_unique_cast<BaseObjectFilter>(
-                      pipeline::PluginFactory::CreatePlugin(plugin_config));
+        pipeline::PluginFactory::CreatePlugin(plugin_config));
 
     std::string plugin_name = PluginType_Name(plugin_config.plugin_type());
     if (filter == nullptr) {
@@ -83,12 +84,10 @@ bool ObjectFilterBank::Init(const StageConfig& stage_config) {
 }
 
 bool ObjectFilterBank::Process(DataFrame* data_frame) {
-  if (data_frame == nullptr)
-    return false;
+  if (data_frame == nullptr) return false;
 
   LidarFrame* lidar_frame = data_frame->lidar_frame;
-  if (lidar_frame == nullptr)
-    return false;
+  if (lidar_frame == nullptr) return false;
 
   size_t object_number = lidar_frame->segmented_objects.size();
 
@@ -99,8 +98,7 @@ bool ObjectFilterBank::Process(DataFrame* data_frame) {
     }
   }
 
-  AINFO << "Object filter bank, filtered objects size: from "
-        << object_number
+  AINFO << "Object filter bank, filtered objects size: from " << object_number
         << " to " << lidar_frame->segmented_objects.size();
   return true;
 }

@@ -146,12 +146,8 @@ bool CenterPointDetection::Detect(const LidarDetectorOptions &options,
     AERROR << "Input null frame ptr.";
     return false;
   }
-  if (frame->cloud == nullptr) {
+  if (frame->cloud == nullptr || frame->cloud->empty()) {
     AERROR << "Input null frame cloud.";
-    return false;
-  }
-  if (frame->cloud->size() == 0) {
-    AERROR << "Input none points.";
     return false;
   }
 
@@ -206,7 +202,6 @@ bool CenterPointDetection::Detect(const LidarDetectorOptions &options,
   downsample_time_ = timer.toc(true);
 
   num_points = cur_cloud_ptr_->size();
-  AINFO << "num points before fusing: " << num_points;
 
   // fuse clouds of preceding frames with current cloud
   cur_cloud_ptr_->mutable_points_timestamp()->assign(cur_cloud_ptr_->size(),
@@ -281,13 +276,10 @@ bool CenterPointDetection::Detect(const LidarDetectorOptions &options,
              &out_detections_final, &out_labels_final);
   inference_time_ = timer.toc(true);
 
-  AINFO << "CenterPoint: "
-        << "\n"
-        << "down sample: " << downsample_time_ << "\t"
-        << "fuse: " << fuse_time_ << "\t"
-        << "shuffle: " << shuffle_time_ << "\t"
-        << "cloud_to_array: " << cloud_to_array_time_ << "\t"
-        << "inference: " << inference_time_ << "\t";
+  AINFO << "CenterPoint timing: Downsample=" << downsample_time_
+        << "ms, Fuse=" << fuse_time_ << "ms, Shuffle=" << shuffle_time_
+        << "ms, CloudToArray=" << cloud_to_array_time_
+        << "ms, Inference=" << inference_time_ << "ms";
   return true;
 }
 

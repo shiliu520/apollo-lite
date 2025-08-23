@@ -76,18 +76,16 @@ bool PointCloudPreprocessor::Init(const StageConfig& stage_config) {
       pointcloud_preprocessor_config_.filter_naninf_points();
   filter_nearby_box_points_ =
       pointcloud_preprocessor_config_.filter_nearby_box_points();
-  box_forward_x_  = pointcloud_preprocessor_config_.box_forward_x();
+  box_forward_x_ = pointcloud_preprocessor_config_.box_forward_x();
   box_backward_x_ = pointcloud_preprocessor_config_.box_backward_x();
-  box_forward_y_  = pointcloud_preprocessor_config_.box_forward_y();
+  box_forward_y_ = pointcloud_preprocessor_config_.box_forward_y();
   box_backward_y_ = pointcloud_preprocessor_config_.box_backward_y();
   filter_high_z_points_ =
       pointcloud_preprocessor_config_.filter_high_z_points();
-  z_threshold_    = pointcloud_preprocessor_config_.z_threshold();
+  z_threshold_ = pointcloud_preprocessor_config_.z_threshold();
   return true;
 }
 
-// Process作用： 1、代替原有的Process逻辑(封装成为InnerProcess) ，
-// 2、循环调用不同task的Process函数(如果有task)
 bool PointCloudPreprocessor::Process(DataFrame* data_frame) {
   if (data_frame == nullptr) return false;
 
@@ -155,50 +153,54 @@ bool PointCloudPreprocessor::Preprocess(
 
 bool PointCloudPreprocessor::Preprocess(
     const PointCloudPreprocessorOptions& options, LidarFrame* frame) const {
-  if (frame == nullptr || frame->cloud == nullptr) {
+  if (frame == nullptr) {
     return false;
   }
+
+  if (frame->cloud == nullptr || frame->cloud->empty()) {
+    return false;
+  }
+
   if (frame->world_cloud == nullptr) {
     frame->world_cloud = base::PointDCloudPool::Instance().Get();
   }
-  if (frame->cloud->size() > 0) {
-    size_t size = frame->cloud->size();
-    size_t i = 0;
-    while (i < size) {
-      auto& pt = frame->cloud->at(i);
-      if (filter_naninf_points_) {
-        if (std::isnan(pt.x) || std::isnan(pt.y) || std::isnan(pt.z)) {
-          frame->cloud->SwapPoint(i, size--);
-          continue;
-        }
-        if (fabs(pt.x) > kPointInfThreshold ||
-            fabs(pt.y) > kPointInfThreshold ||
-            fabs(pt.z) > kPointInfThreshold) {
-          frame->cloud->SwapPoint(i, size--);
-          continue;
-        }
-      }
-      Eigen::Vector3d vec3d_lidar(pt.x, pt.y, pt.z);
-      Eigen::Vector3d vec3d_novatel =
-          options.sensor2novatel_extrinsics * vec3d_lidar;
-      if (filter_nearby_box_points_ && vec3d_novatel[0] < box_forward_x_ &&
-          vec3d_novatel[0] > box_backward_x_ &&
-          vec3d_novatel[1] < box_forward_y_ &&
-          vec3d_novatel[1] > box_backward_y_) {
+
+  size_t size = frame->cloud->size();
+  size_t i = 0;
+  while (i < size) {
+    auto& pt = frame->cloud->at(i);
+    if (filter_naninf_points_) {
+      if (std::isnan(pt.x) || std::isnan(pt.y) || std::isnan(pt.z)) {
         frame->cloud->SwapPoint(i, size--);
         continue;
       }
-      if (filter_high_z_points_ && pt.z > z_threshold_) {
+      if (fabs(pt.x) > kPointInfThreshold || fabs(pt.y) > kPointInfThreshold ||
+          fabs(pt.z) > kPointInfThreshold) {
         frame->cloud->SwapPoint(i, size--);
         continue;
       }
-      ++i;
     }
-    AINFO << "Preprocessor filter points: "
-          << frame->cloud->size() << " to " << size;
-    frame->cloud->resize(size);
-    TransformCloud(frame->cloud, frame->lidar2world_pose, frame->world_cloud);
+    Eigen::Vector3d vec3d_lidar(pt.x, pt.y, pt.z);
+    Eigen::Vector3d vec3d_novatel =
+        options.sensor2novatel_extrinsics * vec3d_lidar;
+    if (filter_nearby_box_points_ && vec3d_novatel[0] < box_forward_x_ &&
+        vec3d_novatel[0] > box_backward_x_ &&
+        vec3d_novatel[1] < box_forward_y_ &&
+        vec3d_novatel[1] > box_backward_y_) {
+      frame->cloud->SwapPoint(i, size--);
+      continue;
+    }
+    if (filter_high_z_points_ && pt.z > z_threshold_) {
+      frame->cloud->SwapPoint(i, size--);
+      continue;
+    }
+    ++i;
   }
+  AINFO << "Preprocessor filter points: " << frame->cloud->size() << " to "
+        << size;
+  frame->cloud->resize(size);
+
+  TransformCloud(frame->cloud, frame->lidar2world_pose, frame->world_cloud);
   return true;
 }
 
