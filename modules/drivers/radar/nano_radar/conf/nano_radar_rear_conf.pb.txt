@@ -3,7 +3,7 @@ can_conf {
   can_card_parameter {
     brand: SOCKET_CAN_RAW
     type: PCI_CARD
-    channel_id: CHANNEL_ID_ZERO
+    channel_id: CHANNEL_ID_ONE
   }
 
   enable_debug_mode: true
@@ -30,12 +30,12 @@ radar_conf {
   radar_power: 0
   send_ext_info: false
   send_quality: false
-  sort_index: 1
+  sort_index: SORT_INDEX_SORT_BY_RANGE
   store_in_nvm: 0
   rcs_threshold: RCS_THRESHOLD_STANDARD
-  baudrate: 0
+  baudrate: CAN_BAUDRATE_500K
   region_max_output_number: 50
-  region_id: 1
+  region_id: 2
   point1_longitude: 0
   point1_lateral: 5
   point2_longitude: 20
@@ -43,6 +43,9 @@ radar_conf {
 
   # unit: nanoseconds, 20ms for 50Hz
   input_send_interval: 20000000
+
+  coll_det_cfg_warning_reset: true
+  coll_det_cfg_activation: true
 }
 
 radar_channel: "/apollo/sensor/nanoradar/rear"

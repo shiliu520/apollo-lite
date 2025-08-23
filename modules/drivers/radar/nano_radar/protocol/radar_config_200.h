@@ -68,12 +68,19 @@ class RadarConfig200 : public apollo::drivers::canbus::ProtocolData<NanoRadar> {
   RadarConfig200* set_ctrl_relay(uint8_t data);
   RadarConfig200* set_send_ext_info(uint8_t data);
   RadarConfig200* set_send_quality(uint8_t data);
-  RadarConfig200* set_sort_index(uint8_t data);
+  RadarConfig200* set_sort_index(NanoRadarState_201::SortIndex data);
   RadarConfig200* set_store_in_nvm(uint8_t data);
   RadarConfig200* set_rcs_threshold(
       NanoRadarState_201::RcsThreshold rcs_theshold);
-  RadarConfig200* set_baudrate(uint8_t data);
+  RadarConfig200* set_baudrate(NanoRadarState_201::CANBaudrate data);
   RadarConfig200* set_radar_conf(RadarConf radar_conf);
+  RadarConfig200* set_interface_select_valid(bool valid);
+  RadarConfig200* set_lvds_valid(bool valid);
+  RadarConfig200* set_calibration_valid(bool valid);
+  RadarConfig200* set_interface_type(uint8_t data);
+  RadarConfig200* set_lvds_select(bool data);
+  RadarConfig200* set_calibration_enabled(
+      NanoRadarState_201::CalibrationEnabled data);
   RadarConf radar_conf();
 
   void set_max_distance_valid_p(uint8_t* data, bool valid);
@@ -95,11 +102,20 @@ class RadarConfig200 : public apollo::drivers::canbus::ProtocolData<NanoRadar> {
   void set_ctrl_relay_p(uint8_t* data, uint8_t value);
   void set_send_ext_info_p(uint8_t* data, uint8_t value);
   void set_send_quality_p(uint8_t* data, uint8_t value);
-  void set_sort_index_p(uint8_t* data, uint8_t value);
+  void set_sort_index_p(uint8_t* data,
+                        NanoRadarState_201::SortIndex sort_index);
   void set_store_in_nvm_p(uint8_t* data, uint8_t value);
   void set_rcs_threshold_p(uint8_t* data,
                            NanoRadarState_201::RcsThreshold rcs_theshold);
-  void set_baudrate_p(uint8_t* data, uint8_t value);
+  void set_baudrate_p(uint8_t* data, NanoRadarState_201::CANBaudrate baudrate);
+  void set_interface_select_valid_p(uint8_t* data, bool valid);
+  void set_lvds_valid_p(uint8_t* data, bool valid);
+  void set_calibration_valid_p(uint8_t* data, bool valid);
+  void set_interface_type_p(uint8_t* data, uint8_t value);
+  void set_lvds_select_p(uint8_t* data, bool value);
+  void set_calibration_enabled_p(
+      uint8_t* data,
+      NanoRadarState_201::CalibrationEnabled calibration_enabled);
 
  private:
   RadarConf radar_conf_;

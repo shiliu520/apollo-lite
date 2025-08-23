@@ -10,8 +10,6 @@ message NanoObjectListStatus_60A {
   optional int32 interface_version = 3;
 }
 
-
-
 message NanoRadarState_201 {
   enum OutputType {
     OUTPUT_TYPE_NONE = 0;
@@ -26,12 +24,44 @@ message NanoRadarState_201 {
     RCS_THRESHOLD_ERROR = 2;
   }
 
+  enum SortIndex {
+    SORT_INDEX_NO_SORTING = 0;
+    SORT_INDEX_SORT_BY_RANGE = 1;
+    SORT_INDEX_SORT_BY_RCS = 2;
+    SORT_INDEX_ERROR = 3;
+  }
+
+  enum CANBaudrate {
+    CAN_BAUDRATE_500K = 0;
+    CAN_BAUDRATE_250K = 1;
+    CAN_BAUDRATE_1M = 2;
+    CAN_BAUDRATE_ERROR = 3;
+  }
+
+  enum CalibrationEnabled {
+    CALIBRATION_ENABLED_ENABLED = 1;
+    CALIBRATION_ENABLED_INITIAL_RECOVERY = 2;
+    CALIBRATION_ENABLED_ERROR = 3;
+  }
+
   optional uint32 max_distance = 1;
   optional uint32 radar_power = 2;
   optional OutputType output_type = 3;
   optional RcsThreshold rcs_threshold = 4;
   optional bool send_quality = 5;
   optional bool send_ext_info = 6;
+  optional bool nvm_read_status = 7;
+  optional bool nvm_write_status = 8;
+  // 0: no sorting, 1: sort by range, 2: sort by RCS
+  optional SortIndex sort_index = 9;
+  optional bool ctrl_relay_cfg = 10;
+  optional uint32 motion_rx_state = 11;
+  // 0: 500K, 1: 250K, 2: 1M
+  optional CANBaudrate can_baudrate = 12;
+  optional uint32 interface_type = 13;
+  optional bool lvds_select = 14;
+  // 1: enabled, 2: initial recovery
+  optional CalibrationEnabled calibration_enabled = 15;
 }
 
 message NanoSoftwareVersion_700 {
@@ -63,6 +93,15 @@ message NanoCollisionDetectionRegionState_402 {
   optional double point2_lateral = 6;
   optional bool coordinates_valid = 7;
   optional bool activation_valid = 8;
+  optional uint32 warning_level = 9;
+  optional uint32 number_of_objects = 10;
+}
+
+message NanoCollisionDetectionState_408 {
+  optional bool activation = 1;
+  optional uint32 number_of_regions = 2;
+  optional double min_detect_time = 3;
+  optional uint32 mesa_counter = 4;
 }
 
 message NanoRadarObs {
@@ -136,6 +175,12 @@ message NanoRadarObs {
   optional double obstacle_angle = 27;
 }
 
+message NanoRadarCollisionDetectionWarning_60E {
+  optional apollo.common.Header header = 1;
+  optional int32 obstacle_id = 2;
+  optional int32 region_bit_field = 3;
+}
+
 message NanoRadar {
   optional apollo.common.Header header = 1;
   repeated NanoRadarObs contiobs = 2;  // conti radar obstacle array
@@ -143,4 +188,7 @@ message NanoRadar {
   optional NanoCollisionDetectionRegionState_402 radar_region_state = 4;
   optional NanoObjectListStatus_60A object_list_status = 6;
   optional NanoSoftwareVersion_700 software_version = 7;
+  optional NanoCollisionDetectionState_408 collision_detection_state = 8;
+  repeated NanoRadarCollisionDetectionWarning_60E collision_detection_warnings =
+      9;
 }

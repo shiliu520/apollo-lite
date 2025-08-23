@@ -28,6 +28,7 @@ message Stream {
     ENBROAD_BINARY = 41;
 
     FORSENSE_TEXT = 50;
+    FORSENSE_BINARY = 51;
 
     CXZL_TEXT = 60;
   }

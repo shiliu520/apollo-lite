@@ -47,6 +47,18 @@ class RadarState201 : public apollo::drivers::canbus::ProtocolData<NanoRadar> {
   bool send_quality(const std::uint8_t* bytes, int32_t length) const;
 
   bool send_ext_info(const std::uint8_t* bytes, int32_t length) const;
+  bool nvm_read_status(const std::uint8_t* bytes, int32_t length) const;
+  bool nvm_write_status(const std::uint8_t* bytes, int32_t length) const;
+  NanoRadarState_201::SortIndex sort_index(const std::uint8_t* bytes,
+                                           int32_t length) const;
+  bool ctrl_relay_cfg(const std::uint8_t* bytes, int32_t length) const;
+  int motion_rx_state(const std::uint8_t* bytes, int32_t length) const;
+  NanoRadarState_201::CANBaudrate can_baudrate(const std::uint8_t* bytes,
+                                               int32_t length) const;
+  int interface_type(const std::uint8_t* bytes, int32_t length) const;
+  bool lvds_select(const std::uint8_t* bytes, int32_t length) const;
+  NanoRadarState_201::CalibrationEnabled calibration_enabled(
+      const std::uint8_t* bytes, int32_t length) const;
 };
 
 }  // namespace nano_radar

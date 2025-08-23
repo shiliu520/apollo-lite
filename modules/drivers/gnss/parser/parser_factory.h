@@ -25,6 +25,8 @@
 #include "modules/drivers/gnss/proto/config.pb.h"
 
 #include "cyber/common/log.h"
+#include "modules/drivers/gnss/parser/forsense/forsense_binary_parser.h"
+#include "modules/drivers/gnss/parser/forsense/forsense_nmea_parser.h"
 #include "modules/drivers/gnss/parser/huace/huace_parser.h"
 #include "modules/drivers/gnss/parser/novatel/novatel_parser.h"
 #include "modules/drivers/gnss/parser/parser.h"
@@ -47,6 +49,14 @@ class ParserFactory {
             {config::Stream::HUACE_TEXT,
              [](const config::Config &cfg) {
                return std::make_unique<HuaceParser>(cfg);
+             }},
+            {config::Stream::FORSENSE_TEXT,
+             [](const config::Config &cfg) {
+               return std::make_unique<ForsenseNmeaParser>(cfg);
+             }},
+            {config::Stream::FORSENSE_BINARY,
+             [](const config::Config &cfg) {
+               return std::make_unique<ForsenseBinaryParser>(cfg);
              }},
             // Add more parser types here by mapping config::Stream to a lambda
             // that creates the corresponding derived parser instance.

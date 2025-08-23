@@ -59,6 +59,8 @@ const double REGION_POINT_RES = 0.2;
 const double REGION_POINT_LONG_MIN = -500;
 const double REGION_POINT_LAT_MIN = -204.6;
 
+const double COLLISION_DETECTION_TIME_RES = 0.1;
+
 }  // namespace nano_radar
 }  // namespace drivers
 }  // namespace apollo

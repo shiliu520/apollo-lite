@@ -104,6 +104,17 @@ apollo::common::ErrorCode NanoRadarCanbusComponent::ConfigureRadar() {
   return can_client_->SendSingleFrame({sender_message.CanFrame()});
 }
 
+apollo::common::ErrorCode
+NanoRadarCanbusComponent::ConfigureRadarCollisionDetection() {
+  CollisionDetectionConfig400 collision_detection_config;
+  collision_detection_config.set_radar_conf(nano_radar_conf_.radar_conf());
+  SenderMessage<NanoRadar> sender_message(
+      CollisionDetectionConfig400::ID + message_id_offset_,
+      &collision_detection_config);
+  sender_message.Update();
+  return can_client_->SendSingleFrame({sender_message.CanFrame()});
+}
+
 apollo::common::ErrorCode NanoRadarCanbusComponent::ConfigureRadarRegion() {
   RegionConfig401 radar_config;
   radar_config.set_radar_conf(nano_radar_conf_.radar_conf());
@@ -123,6 +134,10 @@ bool NanoRadarCanbusComponent::Start() {
     return OnError("Failed to configure radar.");
   }
   AINFO << "The radar is successfully configured.";
+  if (ConfigureRadarCollisionDetection() != ErrorCode::OK) {
+    return OnError("Failed to configure radar collision detection.");
+  }
+  AINFO << "The radar collision detection is successfully configured.";
   if (ConfigureRadarRegion() != ErrorCode::OK) {
     return OnError("Failed to configure radar region.");
   }

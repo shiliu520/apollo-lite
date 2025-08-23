@@ -46,8 +46,6 @@ void RegionConfig401::UpdateData(uint8_t* data) {
   set_collision_detection_activation_valid_p(
       data, radar_conf_.collision_detection_activation_valid());
 
-  set_region_max_output_number_p(
-      data, static_cast<uint8_t>(radar_conf_.region_max_output_number()));
   set_region_id_p(data, static_cast<uint8_t>(radar_conf_.region_id()));
   set_point1_longitude_p(data,
                          static_cast<double>(radar_conf_.point1_longitude()));
@@ -64,7 +62,6 @@ void RegionConfig401::Reset() {
   radar_conf_.set_collision_detection_coordinates_valid(false);
   radar_conf_.set_collision_detection_activation_valid(false);
 
-  radar_conf_.set_region_max_output_number(63);
   radar_conf_.set_region_id(1);
   radar_conf_.set_point1_longitude(0);
   radar_conf_.set_point1_lateral(50);
@@ -88,11 +85,6 @@ RegionConfig401* RegionConfig401::set_collision_detection_coordinates_valid(
 RegionConfig401* RegionConfig401::set_collision_detection_activation_valid(
     bool valid) {
   radar_conf_.set_collision_detection_activation_valid(valid);
-  return this;
-}
-
-RegionConfig401* RegionConfig401::set_region_max_output_number(uint8_t data) {
-  radar_conf_.set_region_max_output_number(data);
   return this;
 }
 
@@ -125,9 +117,9 @@ void RegionConfig401::set_collision_detection_coordinates_valid_p(uint8_t* data,
                                                                   bool valid) {
   Byte frame(data);
   if (valid) {
-    frame.set_value(1, 7, 1);
+    frame.set_value(1, 2, 1);
   } else {
-    frame.set_value(0, 7, 1);
+    frame.set_value(0, 2, 1);
   }
 }
 
@@ -135,16 +127,10 @@ void RegionConfig401::set_collision_detection_activation_valid_p(uint8_t* data,
                                                                  bool valid) {
   Byte frame(data);
   if (valid) {
-    frame.set_value(1, 6, 1);
+    frame.set_value(1, 1, 1);
   } else {
-    frame.set_value(0, 6, 1);
+    frame.set_value(0, 1, 1);
   }
-}
-
-void RegionConfig401::set_region_max_output_number_p(uint8_t* data,
-                                                     uint8_t value) {
-  Byte frame(data);
-  frame.set_value(value, 0, 6);
 }
 
 void RegionConfig401::set_region_id_p(uint8_t* data, uint8_t value) {

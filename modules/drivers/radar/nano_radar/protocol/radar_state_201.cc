@@ -39,6 +39,15 @@ void RadarState201::Parse(const std::uint8_t* bytes, int32_t length,
   state->set_radar_power(radar_power(bytes, length));
   state->set_send_quality(send_quality(bytes, length));
   state->set_send_ext_info(send_ext_info(bytes, length));
+  state->set_nvm_read_status(nvm_read_status(bytes, length));
+  state->set_nvm_write_status(nvm_write_status(bytes, length));
+  state->set_sort_index(sort_index(bytes, length));
+  state->set_ctrl_relay_cfg(ctrl_relay_cfg(bytes, length));
+  state->set_motion_rx_state(motion_rx_state(bytes, length));
+  state->set_can_baudrate(can_baudrate(bytes, length));
+  state->set_interface_type(interface_type(bytes, length));
+  state->set_lvds_select(lvds_select(bytes, length));
+  state->set_calibration_enabled(calibration_enabled(bytes, length));
 }
 
 int RadarState201::max_dist(const std::uint8_t* bytes, int32_t length) const {
@@ -116,6 +125,100 @@ bool RadarState201::send_ext_info(const std::uint8_t* bytes,
 
   bool ret = (x == 0x1);
   return ret;
+}
+bool RadarState201::nvm_read_status(const std::uint8_t* bytes,
+                                    int32_t length) const {
+  Byte t0(bytes + 0);
+  uint32_t x = t0.get_byte(6, 1);
+
+  bool ret = (x == 0x1);
+  return ret;
+}
+bool RadarState201::nvm_write_status(const std::uint8_t* bytes,
+                                     int32_t length) const {
+  Byte t0(bytes + 0);
+  uint32_t x = t0.get_byte(7, 1);
+
+  bool ret = (x == 0x1);
+  return ret;
+}
+NanoRadarState_201::SortIndex RadarState201::sort_index(
+    const std::uint8_t* bytes, int32_t length) const {
+  Byte t0(bytes + 4);
+  uint32_t x = t0.get_byte(4, 3);
+
+  switch (x) {
+    case 0x0:
+      return NanoRadarState_201::SORT_INDEX_NO_SORTING;
+    case 0x1:
+      return NanoRadarState_201::SORT_INDEX_SORT_BY_RANGE;
+    case 0x2:
+      return NanoRadarState_201::SORT_INDEX_SORT_BY_RCS;
+    default:
+      return NanoRadarState_201::SORT_INDEX_ERROR;
+  }
+}
+bool RadarState201::ctrl_relay_cfg(const std::uint8_t* bytes,
+                                   int32_t length) const {
+  Byte t0(bytes + 5);
+  uint32_t x = t0.get_byte(1, 1);
+
+  bool ret = (x == 0x1);
+  return ret;
+}
+int RadarState201::motion_rx_state(const std::uint8_t* bytes,
+                                   int32_t length) const {
+  Byte t0(bytes + 5);
+  uint32_t x = t0.get_byte(6, 2);
+
+  int ret = x;
+  return ret;
+}
+NanoRadarState_201::CANBaudrate RadarState201::can_baudrate(
+    const std::uint8_t* bytes, int32_t length) const {
+  Byte t0(bytes + 6);
+  uint32_t x = t0.get_byte(5, 3);
+
+  switch (x) {
+    case 0x0:
+      return NanoRadarState_201::CAN_BAUDRATE_500K;
+    case 0x1:
+      return NanoRadarState_201::CAN_BAUDRATE_250K;
+    case 0x2:
+      return NanoRadarState_201::CAN_BAUDRATE_1M;
+    default:
+      return NanoRadarState_201::CAN_BAUDRATE_ERROR;
+  }
+}
+int RadarState201::interface_type(const std::uint8_t* bytes,
+                                  int32_t length) const {
+  Byte t0(bytes + 7);
+  uint32_t x = t0.get_byte(0, 2);
+
+  int ret = x;
+  return ret;
+}
+bool RadarState201::lvds_select(const std::uint8_t* bytes,
+                                int32_t length) const {
+  Byte t0(bytes + 7);
+  uint32_t x = t0.get_byte(5, 1);
+
+  bool ret = (x == 0x1);
+  return ret;
+}
+NanoRadarState_201::CalibrationEnabled RadarState201::calibration_enabled(
+    const std::uint8_t* bytes, int32_t length) const {
+  Byte t0(bytes + 7);
+  uint32_t x = t0.get_byte(6, 2);
+
+  switch (x) {
+    case 0x1:
+      return NanoRadarState_201::CALIBRATION_ENABLED_ENABLED;
+    case 0x2:
+      return NanoRadarState_201::CALIBRATION_ENABLED_INITIAL_RECOVERY;
+    default:
+      return NanoRadarState_201::CALIBRATION_ENABLED_ERROR;
+  }
 }
 
 }  // namespace nano_radar

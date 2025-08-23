@@ -44,6 +44,7 @@ void ObjectGeneralInfo60B::Parse(const std::uint8_t* bytes, int32_t length,
   conti_obs->set_lateral_vel(lateral_vel(bytes, length));
   conti_obs->set_rcs(rcs(bytes, length));
   conti_obs->set_dynprop(dynprop(bytes, length));
+  conti_obs->set_obstacle_class(obstacle_class(bytes, length));
   // double long_dist = longitude_dist(bytes, length);
   // double lat_dist = lateral_dist(bytes, length);
   double obs_range = obstacle_range(longitude_dist(bytes, length),
@@ -146,6 +147,15 @@ int ObjectGeneralInfo60B::dynprop(const std::uint8_t* bytes,
                                   int32_t length) const {
   Byte t0(bytes + 6);
   int32_t x = t0.get_byte(0, 3);
+
+  int ret = x;
+  return ret;
+}
+
+int ObjectGeneralInfo60B::obstacle_class(const std::uint8_t* bytes,
+                                         int32_t length) const {
+  Byte t0(bytes + 6);
+  int32_t x = t0.get_byte(3, 2);
 
   int ret = x;
   return ret;

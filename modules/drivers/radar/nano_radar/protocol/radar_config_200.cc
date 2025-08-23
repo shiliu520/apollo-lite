@@ -50,6 +50,9 @@ void RadarConfig200::UpdateData(uint8_t* data) {
   set_store_in_nvm_valid_p(data, radar_conf_.store_in_nvm_valid());
   set_rcs_threshold_valid_p(data, radar_conf_.rcs_threshold_valid());
   set_baudrate_valid_p(data, radar_conf_.baudrate_valid());
+  set_interface_select_valid_p(data, radar_conf_.interface_select_valid());
+  set_lvds_valid_p(data, radar_conf_.lvds_valid());
+  set_calibration_valid_p(data, radar_conf_.calibration_valid());
 
   set_max_distance_p(data, static_cast<uint16_t>(radar_conf_.max_distance()));
   set_sensor_id_p(data, static_cast<uint8_t>(radar_conf_.sensor_id()));
@@ -57,10 +60,13 @@ void RadarConfig200::UpdateData(uint8_t* data) {
   set_radar_power_p(data, static_cast<uint8_t>(radar_conf_.radar_power()));
   set_send_ext_info_p(data, radar_conf_.send_ext_info());
   set_send_quality_p(data, radar_conf_.send_quality());
-  set_sort_index_p(data, static_cast<uint8_t>(radar_conf_.sort_index()));
+  set_sort_index_p(data, radar_conf_.sort_index());
   set_store_in_nvm_p(data, static_cast<uint8_t>(radar_conf_.store_in_nvm()));
   set_rcs_threshold_p(data, radar_conf_.rcs_threshold());
   set_baudrate_p(data, radar_conf_.baudrate());
+  set_interface_type_p(data, radar_conf_.interface_type());
+  set_lvds_select_p(data, radar_conf_.lvds_select());
+  set_calibration_enabled_p(data, radar_conf_.calibration_enabled());
 }
 
 /**
@@ -77,6 +83,9 @@ void RadarConfig200::Reset() {
   radar_conf_.set_store_in_nvm_valid(false);
   radar_conf_.set_rcs_threshold_valid(true);
   radar_conf_.set_baudrate_valid(true);
+  radar_conf_.set_interface_select_valid(false);
+  radar_conf_.set_lvds_valid(false);
+  radar_conf_.set_calibration_valid(false);
 
   radar_conf_.set_max_distance(125);
   radar_conf_.set_sensor_id(0);
@@ -84,10 +93,14 @@ void RadarConfig200::Reset() {
   radar_conf_.set_radar_power(0);
   radar_conf_.set_send_ext_info(1);
   radar_conf_.set_send_quality(1);
-  radar_conf_.set_sort_index(0);
+  radar_conf_.set_sort_index(NanoRadarState_201::SORT_INDEX_NO_SORTING);
   radar_conf_.set_store_in_nvm(0);
   radar_conf_.set_rcs_threshold(NanoRadarState_201::RCS_THRESHOLD_STANDARD);
-  radar_conf_.set_baudrate(0);
+  radar_conf_.set_baudrate(NanoRadarState_201::CAN_BAUDRATE_500K);
+  radar_conf_.set_interface_type(0);
+  radar_conf_.set_lvds_select(false);
+  radar_conf_.set_calibration_enabled(
+      NanoRadarState_201::CALIBRATION_ENABLED_ENABLED);
 }
 
 RadarConf RadarConfig200::radar_conf() { return radar_conf_; }
@@ -173,7 +186,8 @@ RadarConfig200* RadarConfig200::set_send_quality(uint8_t data) {
   return this;
 }
 
-RadarConfig200* RadarConfig200::set_sort_index(uint8_t data) {
+RadarConfig200* RadarConfig200::set_sort_index(
+    NanoRadarState_201::SortIndex data) {
   radar_conf_.set_sort_index(data);
   return this;
 }
@@ -186,6 +200,32 @@ RadarConfig200* RadarConfig200::set_store_in_nvm(uint8_t data) {
 RadarConfig200* RadarConfig200::set_rcs_threshold(
     NanoRadarState_201::RcsThreshold rcs_theshold) {
   radar_conf_.set_rcs_threshold(rcs_theshold);
+  return this;
+}
+
+RadarConfig200* RadarConfig200::set_interface_select_valid(bool valid) {
+  radar_conf_.set_interface_select_valid(valid);
+  return this;
+}
+RadarConfig200* RadarConfig200::set_lvds_valid(bool valid) {
+  radar_conf_.set_lvds_valid(valid);
+  return this;
+}
+RadarConfig200* RadarConfig200::set_calibration_valid(bool valid) {
+  radar_conf_.set_calibration_valid(valid);
+  return this;
+}
+RadarConfig200* RadarConfig200::set_interface_type(uint8_t data) {
+  radar_conf_.set_interface_type(data);
+  return this;
+}
+RadarConfig200* RadarConfig200::set_lvds_select(bool data) {
+  radar_conf_.set_lvds_select(data);
+  return this;
+}
+RadarConfig200* RadarConfig200::set_calibration_enabled(
+    NanoRadarState_201::CalibrationEnabled data) {
+  radar_conf_.set_calibration_enabled(data);
   return this;
 }
 
@@ -323,8 +363,10 @@ void RadarConfig200::set_send_quality_p(uint8_t* data, uint8_t value) {
   frame.set_value(value, 2, 1);
 }
 
-void RadarConfig200::set_sort_index_p(uint8_t* data, uint8_t value) {
+void RadarConfig200::set_sort_index_p(
+    uint8_t* data, NanoRadarState_201::SortIndex sort_index) {
   Byte frame(data + 5);
+  uint8_t value = static_cast<uint8_t>(sort_index);
   frame.set_value(value, 4, 3);
 }
 
@@ -354,14 +396,59 @@ void RadarConfig200::set_baudrate_valid_p(uint8_t* data, bool valid) {
   }
 }
 
-RadarConfig200* RadarConfig200::set_baudrate(uint8_t data) {
+RadarConfig200* RadarConfig200::set_baudrate(
+    NanoRadarState_201::CANBaudrate data) {
   radar_conf_.set_baudrate(data);
   return this;
 }
 
-void RadarConfig200::set_baudrate_p(uint8_t* data, uint8_t value) {
+void RadarConfig200::set_baudrate_p(uint8_t* data,
+                                    NanoRadarState_201::CANBaudrate baudrate) {
   Byte frame(data + 7);
+  uint8_t value = static_cast<uint8_t>(baudrate);
   frame.set_value(value, 5, 3);
+}
+void RadarConfig200::set_interface_select_valid_p(uint8_t* data, bool valid) {
+  Byte frame(data + 6);
+  if (valid) {
+    frame.set_value(1, 6, 1);
+  } else {
+    frame.set_value(0, 6, 1);
+  }
+}
+void RadarConfig200::set_lvds_valid_p(uint8_t* data, bool valid) {
+  Byte frame(data + 6);
+  if (valid) {
+    frame.set_value(1, 7, 1);
+  } else {
+    frame.set_value(0, 7, 1);
+  }
+}
+void RadarConfig200::set_calibration_valid_p(uint8_t* data, bool valid) {
+  Byte frame(data + 7);
+  if (valid) {
+    frame.set_value(1, 3, 1);
+  } else {
+    frame.set_value(0, 3, 1);
+  }
+}
+void RadarConfig200::set_interface_type_p(uint8_t* data, uint8_t value) {
+  Byte frame(data + 6);
+  frame.set_value(value, 4, 2);
+}
+void RadarConfig200::set_lvds_select_p(uint8_t* data, bool value) {
+  Byte frame(data + 7);
+  if (value) {
+    frame.set_value(1, 0, 1);
+  } else {
+    frame.set_value(0, 0, 1);
+  }
+}
+void RadarConfig200::set_calibration_enabled_p(
+    uint8_t* data, NanoRadarState_201::CalibrationEnabled calibration_enabled) {
+  Byte frame(data + 7);
+  uint8_t value = static_cast<uint8_t>(calibration_enabled);
+  frame.set_value(value, 2, 2);
 }
 
 }  // namespace nano_radar

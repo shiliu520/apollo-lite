@@ -37,7 +37,7 @@ class CollisionDetectionRegionState402
  private:
   int region_id(const std::uint8_t* bytes, int32_t length) const;
 
-  int region_max_output_number(const std::uint8_t* bytes, int32_t length) const;
+  int warning_level(const std::uint8_t* bytes, int32_t length) const;
 
   double point1_longitude(const std::uint8_t* bytes, int32_t length) const;
 
@@ -46,6 +46,7 @@ class CollisionDetectionRegionState402
   double point2_longitude(const std::uint8_t* bytes, int32_t length) const;
 
   double point2_lateral(const std::uint8_t* bytes, int32_t length) const;
+  int number_of_objects(const std::uint8_t* bytes, int32_t length) const;
 };
 
 }  // namespace nano_radar

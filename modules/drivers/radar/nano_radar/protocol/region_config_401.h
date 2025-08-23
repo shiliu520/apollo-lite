@@ -52,7 +52,6 @@ class RegionConfig401
 
   RegionConfig401* set_collision_detection_coordinates_valid(bool valid);
   RegionConfig401* set_collision_detection_activation_valid(bool valid);
-  RegionConfig401* set_region_max_output_number(uint8_t data);
   RegionConfig401* set_region_id(uint8_t datad);
   RegionConfig401* set_point1_longitude(double data);
   RegionConfig401* set_point1_lateral(double data);
@@ -64,7 +63,6 @@ class RegionConfig401
   void set_collision_detection_coordinates_valid_p(uint8_t* data, bool valid);
   void set_collision_detection_activation_valid_p(uint8_t* data, bool valid);
 
-  void set_region_max_output_number_p(uint8_t* data, uint8_t value);
   void set_region_id_p(uint8_t* data, uint8_t value);
   void set_point1_longitude_p(uint8_t* data, double value);
   void set_point1_lateral_p(uint8_t* data, double value);
