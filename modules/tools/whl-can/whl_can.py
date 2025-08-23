@@ -26,7 +26,7 @@ from modules.common_msgs.control_msgs import control_cmd_pb2
 CONTROL_TOPIC = "/apollo/control"
 
 SPEED_MIN, SPEED_MAX = -5.0, 5.0
-STEERING_MIN, STEERING_MAX = -540.0, 540.0
+STEERING_MIN, STEERING_MAX = -100.0, 100.0
 BRAKE_MIN, BRAKE_MAX = 0.0, 100.0
 
 SPEED_DELTA = 0.1
@@ -65,7 +65,7 @@ class KeyboardController:
         self.steering = 0.0
         self.speed_delta = speed_delta
         self.steering_delta = steering_delta
-        # check definition of in modules/common_msgs/chassis_msgs/chassis.proto
+        # check defination of in modules/common_msgs/chassis_msgs/chassis.proto
         self.gear_list = [3, 2, 0, 1]
         self.gear_str = ["P", "R", "N", "D"]
         self.gear_index = 0
@@ -239,7 +239,7 @@ def main(screen):
 
     # Pre-print the fixed format lines
     screen.addstr(2, 0, "speed: 0.00    ")
-    screen.addstr(3, 0, "steer: 0.00    ")
+    screen.addstr(3, 0, "steer_percentage: 0.00    ")
     screen.addstr(4, 0, "gear:  P")
     screen.addstr(5, 0, "brake: 0.00    ")
     screen.addstr(6, 0, "epb:   0       ")
