@@ -19,13 +19,14 @@
 #include <string>
 #include <vector>
 
+#include "modules/perception/pipeline/proto/stage/probabilistic_fusion_config.pb.h"
+
 #include "cyber/common/macros.h"
 #include "modules/perception/fusion/base/sensor_data_manager.h"
 #include "modules/perception/fusion/lib/interface/base_data_association.h"
 #include "modules/perception/fusion/lib/interface/base_fusion_system.h"
 #include "modules/perception/fusion/lib/interface/base_gatekeeper.h"
 #include "modules/perception/fusion/lib/interface/base_tracker.h"
-#include "modules/perception/pipeline/proto/stage/probabilistic_fusion_config.pb.h"
 #include "modules/perception/pipeline/stage.h"
 
 namespace apollo {

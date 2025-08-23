@@ -24,6 +24,8 @@
 #include <memory>
 
 #include "modules/common/util/message_util.h"
+#include "modules/drivers/radar/nano_radar/protocol/collision_detection_state_408.h"
+#include "modules/drivers/radar/nano_radar/protocol/collision_detection_warning_60e.h"
 #include "modules/drivers/radar/nano_radar/protocol/object_general_info_60b.h"
 #include "modules/drivers/radar/nano_radar/protocol/object_list_status_60a.h"
 #include "modules/drivers/radar/nano_radar/protocol/radar_state_201.h"
@@ -46,8 +48,10 @@ NanoRadarMessageManager::NanoRadarMessageManager(
     : nano_radar_writer_(writer) {
   AddRecvProtocolData<RadarState201, true>();
   AddRecvProtocolData<CollisionDetectionRegionState402, true>();
+  AddRecvProtocolData<CollisionDetectionState408, true>();
   AddRecvProtocolData<ObjectGeneralInfo60B, true>();
   AddRecvProtocolData<ObjectListStatus60A, true>();
+  AddRecvProtocolData<CollisionDetectionWarning60E, true>();
   AddRecvProtocolData<SoftwareVersion700, true>();
 }
 
@@ -77,6 +81,10 @@ ProtocolData<NanoRadar> *NanoRadarMessageManager::GetMutableProtocolDataById(
 
 void NanoRadarMessageManager::Parse(const uint32_t message_id,
                                     const uint8_t *data, int32_t length) {
+  if (((message_id & 0xFF0F) | message_id_offset_) != message_id) {
+    // ignore messages that not match the sensor ID
+    return;
+  }
   ProtocolData<NanoRadar> *sensor_protocol_data =
       GetMutableProtocolDataById(message_id & 0xFF0F);
   if (sensor_protocol_data == nullptr) {
@@ -93,7 +101,9 @@ void NanoRadarMessageManager::Parse(const uint32_t message_id,
   if (message_id == ObjectListStatus60A::ID + message_id_offset_) {
     ADEBUG << sensor_data_.ShortDebugString();
     nano_radar_writer_->Write(sensor_data_);
-    sensor_data_.Clear();
+    // only clear contiobs when receive the object list status message
+    sensor_data_.clear_contiobs();
+    sensor_data_.clear_collision_detection_warnings();
     // fill header when receive the general info message
     common::util::FillHeader("nano_radar", &sensor_data_);
   }

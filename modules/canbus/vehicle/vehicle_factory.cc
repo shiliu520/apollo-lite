@@ -26,7 +26,7 @@
 #include "modules/canbus/vehicle/transit/transit_vehicle_factory.h"
 #include "modules/canbus/vehicle/wey/wey_vehicle_factory.h"
 #include "modules/canbus/vehicle/zhongyun/zhongyun_vehicle_factory.h"
-
+#include "modules/canbus/vehicle/mk_mini/mk_mini_vehicle_factory.h"
 namespace apollo {
 namespace canbus {
 
@@ -60,6 +60,9 @@ void VehicleFactory::RegisterVehicleFactory() {
   });
   Register(apollo::common::NEOLIX, []() -> AbstractVehicleFactory * {
     return new Neolix_eduVehicleFactory();
+  });
+  Register(apollo::common::MK_MINI, []() -> AbstractVehicleFactory * {
+  return new Mk_miniVehicleFactory();
   });
 }
 

@@ -127,6 +127,7 @@ proto_library(
         ":transit_proto",
         ":wey_proto",
         ":zhongyun_proto",
+        ":mk_mini_proto",
         "//modules/common_msgs/basic_msgs:vehicle_id_proto",
     ],
 )
@@ -192,4 +193,21 @@ proto_library(
 py_proto_library(
     name = "wey_py_pb2",
     deps = [":wey_proto"],
+)
+
+cc_proto_library(
+    name = "mk_mini_cc_proto",
+    deps = [
+        ":mk_mini_proto",
+    ],
+)
+
+proto_library(
+    name = "mk_mini_proto",
+    srcs = ["mk_mini.proto"],
+)
+
+py_proto_library(
+    name = "mk_mini_py_pb2",
+    deps = [":mk_mini_proto"],
 )

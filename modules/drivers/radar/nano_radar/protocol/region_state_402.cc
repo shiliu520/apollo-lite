@@ -37,26 +37,27 @@ void CollisionDetectionRegionState402::Parse(const std::uint8_t* bytes,
                                              NanoRadar* nano_radar) const {
   auto state = nano_radar->mutable_radar_region_state();
   state->set_region_id(region_id(bytes, length));
-  state->set_region_max_output_number(region_max_output_number(bytes, length));
+  state->set_warning_level(warning_level(bytes, length));
   state->set_point1_longitude(point1_longitude(bytes, length));
   state->set_point1_lateral(floor(point1_lateral(bytes, length)));
   state->set_point2_longitude(point2_longitude(bytes, length));
   state->set_point2_lateral(floor(point2_lateral(bytes, length)));
+  state->set_number_of_objects(number_of_objects(bytes, length));
 }
 
 int CollisionDetectionRegionState402::region_id(const std::uint8_t* bytes,
                                                 int32_t length) const {
   Byte t0(bytes);
-  uint32_t x = t0.get_byte(6, 2);
+  uint32_t x = t0.get_byte(5, 3);
 
   int ret = x;
   return ret;
 }
 
-int CollisionDetectionRegionState402::region_max_output_number(
-    const std::uint8_t* bytes, int32_t length) const {
-  Byte t0(bytes);
-  uint32_t x = t0.get_byte(0, 5);
+int CollisionDetectionRegionState402::warning_level(const std::uint8_t* bytes,
+                                                    int32_t length) const {
+  Byte t0(bytes + 0);
+  uint32_t x = t0.get_byte(3, 2);
 
   int ret = x;
   return ret;
@@ -119,6 +120,15 @@ double CollisionDetectionRegionState402::point2_lateral(
   x |= t;
 
   double ret = x * REGION_POINT_RES + REGION_POINT_LAT_MIN;
+  return ret;
+}
+
+int CollisionDetectionRegionState402::number_of_objects(
+    const std::uint8_t* bytes, int32_t length) const {
+  Byte t0(bytes + 7);
+  int32_t x = t0.get_byte(0, 8);
+
+  double ret = x;
   return ret;
 }
 

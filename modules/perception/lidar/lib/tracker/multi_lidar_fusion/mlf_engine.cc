@@ -20,14 +20,15 @@
 
 #include "Eigen/Geometry"
 
-#include "cyber/common/file.h"
 #include "modules/common_msgs/localization_msgs/localization.pb.h"
 #include "modules/common_msgs/prediction_msgs/feature.pb.h"
+#include "modules/perception/pipeline/proto/plugin/multi_lidar_fusion_config.pb.h"
+#include "modules/perception/pipeline/proto/stage/mlf_engine_config.pb.h"
+
+#include "cyber/common/file.h"
 #include "modules/perception/lib/config_manager/config_manager.h"
 #include "modules/perception/lidar/lib/tracker/common/track_pool_types.h"
 #include "modules/perception/pipeline/plugin_factory.h"
-#include "modules/perception/pipeline/proto/plugin/multi_lidar_fusion_config.pb.h"
-#include "modules/perception/pipeline/proto/stage/mlf_engine_config.pb.h"
 
 namespace apollo {
 namespace perception {
@@ -103,27 +104,26 @@ bool MlfEngine::Init(const StageConfig& stage_config) {
   }
 
   use_histogram_for_match_ = config.use_histogram_for_match();
-  histogram_bin_size_      = config.histogram_bin_size();
-  output_predict_objects_  = config.output_predict_objects();
+  histogram_bin_size_ = config.histogram_bin_size();
+  output_predict_objects_ = config.output_predict_objects();
   reserved_invisible_time_ = config.reserved_invisible_time();
-  use_frame_timestamp_     = config.use_frame_timestamp();
+  use_frame_timestamp_ = config.use_frame_timestamp();
 
   // create plugins
   matcher_ = pipeline::dynamic_unique_cast<MlfTrackObjectMatcher>(
-                pipeline::PluginFactory::CreatePlugin(
-                    plugin_config_map_[PluginType::MLF_TRACK_OBJECT_MATCHER]));
+      pipeline::PluginFactory::CreatePlugin(
+          plugin_config_map_[PluginType::MLF_TRACK_OBJECT_MATCHER]));
   CHECK_NOTNULL(matcher_);
 
   tracker_ = pipeline::dynamic_unique_cast<MlfTracker>(
-                pipeline::PluginFactory::CreatePlugin(
-                    plugin_config_map_[PluginType::MLF_TRACKER]));
+      pipeline::PluginFactory::CreatePlugin(
+          plugin_config_map_[PluginType::MLF_TRACKER]));
   CHECK_NOTNULL(tracker_);
   return true;
 }
 
 bool MlfEngine::Process(DataFrame* data_frame) {
-  if (data_frame == nullptr || data_frame->lidar_frame == nullptr)
-    return false;
+  if (data_frame == nullptr || data_frame->lidar_frame == nullptr) return false;
 
   MultiTargetTrackerOptions options;
   bool res = Track(options, data_frame->lidar_frame);
@@ -318,32 +318,32 @@ void MlfEngine::CollectTrackedResult(LidarFrame* frame) {
   };
   collect(&foreground_track_data_);
   // update semantic map object container
-// TODO(all): semantic map related, for debugging
-//  if (use_semantic_map_) {
-//    obstacle_container_.CleanUp();
-//    // use msg serializer to convert object to perception obstacles
-//    apollo::common::ErrorCode err = apollo::common::ErrorCode::OK;
-//    apollo::perception::PerceptionObstacles obstacles;
-//    double lidar_ts = frame->timestamp;
-//    localization::LocalizationEstimate localization;
-//    localization.mutable_header()->set_timestamp_sec(lidar_ts);
-//    localization.mutable_header()->set_lidar_timestamp(lidar_ts * 1e9);
-//    localization.mutable_pose()->mutable_linear_velocity()->set_x(0.0f);
-//    localization.mutable_pose()->mutable_linear_velocity()->set_y(0.0f);
-//    localization.mutable_pose()->mutable_linear_velocity()->set_z(0.0f);
-//    convertPoseToLoc(frame->novatel2world_pose, &localization);
-//    pose_container_.Insert(localization);
-//    obstacle_container_.InsertPerceptionObstacle(
-//        *(pose_container_.ToPerceptionObstacle()), lidar_ts);
-//    std::vector<std::shared_ptr<base::Object>> foreground_objs(
-//        tracked_objects.begin(), tracked_objects.begin() + pos);
-//    serializer_.SerializeMsg(0, static_cast<uint64_t>(lidar_ts * 1e9), 0,
-//                             foreground_objs, err, &obstacles);
-//    obstacle_container_.Insert(obstacles);
-//    evaluator_.Run(&obstacle_container_);
-//    AttachDebugInfo(&foreground_objs);
-//    AttachSemanticPredictedTrajectory(foreground_track_data_);
-//  }
+  // TODO(all): semantic map related, for debugging
+  //  if (use_semantic_map_) {
+  //    obstacle_container_.CleanUp();
+  //    // use msg serializer to convert object to perception obstacles
+  //    apollo::common::ErrorCode err = apollo::common::ErrorCode::OK;
+  //    apollo::perception::PerceptionObstacles obstacles;
+  //    double lidar_ts = frame->timestamp;
+  //    localization::LocalizationEstimate localization;
+  //    localization.mutable_header()->set_timestamp_sec(lidar_ts);
+  //    localization.mutable_header()->set_lidar_timestamp(lidar_ts * 1e9);
+  //    localization.mutable_pose()->mutable_linear_velocity()->set_x(0.0f);
+  //    localization.mutable_pose()->mutable_linear_velocity()->set_y(0.0f);
+  //    localization.mutable_pose()->mutable_linear_velocity()->set_z(0.0f);
+  //    convertPoseToLoc(frame->novatel2world_pose, &localization);
+  //    pose_container_.Insert(localization);
+  //    obstacle_container_.InsertPerceptionObstacle(
+  //        *(pose_container_.ToPerceptionObstacle()), lidar_ts);
+  //    std::vector<std::shared_ptr<base::Object>> foreground_objs(
+  //        tracked_objects.begin(), tracked_objects.begin() + pos);
+  //    serializer_.SerializeMsg(0, static_cast<uint64_t>(lidar_ts * 1e9), 0,
+  //                             foreground_objs, err, &obstacles);
+  //    obstacle_container_.Insert(obstacles);
+  //    evaluator_.Run(&obstacle_container_);
+  //    AttachDebugInfo(&foreground_objs);
+  //    AttachSemanticPredictedTrajectory(foreground_track_data_);
+  //  }
 
   collect(&background_track_data_);
   if (num_predict != 0) {

@@ -35,6 +35,7 @@
 #include "modules/drivers/canbus/can_comm/can_receiver.h"
 #include "modules/drivers/canbus/can_comm/message_manager.h"
 #include "modules/drivers/radar/nano_radar/nano_radar_message_manager.h"
+#include "modules/drivers/radar/nano_radar/protocol/collision_detection_config_400.h"
 #include "modules/drivers/radar/nano_radar/protocol/radar_config_200.h"
 #include "modules/drivers/radar/nano_radar/protocol/region_config_401.h"
 
@@ -63,6 +64,7 @@ class NanoRadarCanbusComponent : public apollo::cyber::Component<> {
   void RegisterCanClients();
   apollo::common::ErrorCode ConfigureRadar();
   apollo::common::ErrorCode ConfigureRadarRegion();
+  apollo::common::ErrorCode ConfigureRadarCollisionDetection();
   bool Start();
   void Stop();
 

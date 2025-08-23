@@ -49,6 +49,8 @@ class ObjectGeneralInfo60B
 
   int dynprop(const std::uint8_t* bytes, int32_t length) const;
 
+  int obstacle_class(const std::uint8_t* bytes, int32_t length) const;
+
   double obstacle_range(double longitude_dist, double lateral_dist) const;
 
   double obstacle_velocity(double longitude_vel, double lateral_vel,

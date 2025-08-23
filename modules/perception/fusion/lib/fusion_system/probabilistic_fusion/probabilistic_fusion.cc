@@ -111,7 +111,7 @@ bool ProbabilisticFusion::Init(const StageConfig& stage_config) {
   params_.data_association_method =
       probabilistic_fusion_config_.data_association_method();
   for (const auto& prohibition_sensor :
-          probabilistic_fusion_config_.prohibition_sensors()) {
+       probabilistic_fusion_config_.prohibition_sensors()) {
     params_.prohibition_sensors.push_back(prohibition_sensor);
   }
 
@@ -144,12 +144,10 @@ bool ProbabilisticFusion::Init(const StageConfig& stage_config) {
 }
 
 bool ProbabilisticFusion::Process(DataFrame* data_frame) {
-  if (data_frame == nullptr)
-    return false;
+  if (data_frame == nullptr) return false;
 
   FusionFrame* fusion_frame = data_frame->fusion_frame;
-  if (fusion_frame == nullptr)
-    return false;
+  if (fusion_frame == nullptr) return false;
 
   // 3. perform fusion on related frames
   for (const auto& frame : fusion_frame->sensor_frames) {
@@ -267,8 +265,8 @@ void ProbabilisticFusion::UpdateAssignedTracks(
   for (size_t i = 0; i < assignments.size(); ++i) {
     size_t track_ind = assignments[i].first;
     size_t obj_ind = assignments[i].second;
-    trackers_[track_ind]->UpdateWithMeasurement(
-        options, f_ground_objs[obj_ind], frame->GetTimestamp());
+    trackers_[track_ind]->UpdateWithMeasurement(options, f_ground_objs[obj_ind],
+                                                frame->GetTimestamp());
   }
 }
 
@@ -312,8 +310,7 @@ void ProbabilisticFusion::CreateNewTracks(
     track->Initialize(f_ground_objs[obj_ind]);
     scenes_->AddForegroundTrack(track);
 
-    ADEBUG << "object id: "
-           << f_ground_objs[obj_ind]->GetBaseObject()->track_id
+    ADEBUG << "object id: " << f_ground_objs[obj_ind]->GetBaseObject()->track_id
            << ", create new track: " << track->GetTrackId();
 
     if (params_.tracker_method == "PbfTracker") {
@@ -477,15 +474,12 @@ void ProbabilisticFusion::CollectObjectsByTrack(
 
   ADEBUG << "fusion_reporting..." << obj->track_id << "@"
          << FORMAT_TIMESTAMP(timestamp) << "@(" << std::setprecision(10)
-         << obj->center(0) << ","
-         << obj->center(1) << ","
+         << obj->center(0) << "," << obj->center(1) << ","
          << obj->center_uncertainty(0, 0) << ","
          << obj->center_uncertainty(0, 1) << ","
          << obj->center_uncertainty(1, 0) << ","
-         << obj->center_uncertainty(1, 1) << ","
-         << obj->velocity(0) << ","
-         << obj->velocity(1) << ","
-         << obj->velocity_uncertainty(0, 0) << ","
+         << obj->center_uncertainty(1, 1) << "," << obj->velocity(0) << ","
+         << obj->velocity(1) << "," << obj->velocity_uncertainty(0, 0) << ","
          << obj->velocity_uncertainty(0, 1) << ","
          << obj->velocity_uncertainty(1, 0) << ","
          << obj->velocity_uncertainty(1, 1) << ")";
