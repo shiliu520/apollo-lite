@@ -18,9 +18,11 @@ from cyber.python.cyber_py3 import cyber
 # This affects the generated template and the message type that will be published.
 # Make sure it matches the actual message type you want to use.
 
-from cyber.proto.unit_test_pb2 import ChatterBenchmark as MessageType
+from modules.common_msgs.prediction_msgs.prediction_obstacle_pb2 import (
+    PredictionObstacles as MessageType,
+)
 
-# ========================================================
+# ================= END USER CONFIGURATION =================
 
 
 # Set up logging
