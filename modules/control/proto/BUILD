@@ -52,6 +52,26 @@ py_proto_library(
 )
 
 cc_proto_library(
+    name = "diff_drive_lat_controller_conf_cc_proto",
+    deps = [
+        ":diff_drive_lat_controller_conf_proto",
+    ],
+)
+
+proto_library(
+    name = "diff_drive_lat_controller_conf_proto",
+    srcs = ["diff_drive_lat_controller_conf.proto"],
+    deps = [
+        ":pid_conf_proto"
+    ],
+)
+
+py_proto_library(
+    name = "diff_drive_lat_controller_conf_py_pb2",
+    deps = [":diff_drive_lat_controller_conf_proto"],
+)
+
+cc_proto_library(
     name = "lat_controller_conf_cc_proto",
     deps = [
         ":lat_controller_conf_proto",
@@ -142,6 +162,7 @@ proto_library(
         ":lat_controller_conf_proto",
         ":lon_controller_conf_proto",
         ":mpc_controller_conf_proto",
+        ":diff_drive_lat_controller_conf_proto",
         "//modules/common_msgs/chassis_msgs:chassis_proto",
         "//modules/common_msgs/control_msgs:pad_msg_proto",
     ],

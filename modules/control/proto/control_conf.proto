@@ -7,6 +7,7 @@ import "modules/common_msgs/control_msgs/pad_msg.proto";
 import "modules/control/proto/lat_controller_conf.proto";
 import "modules/control/proto/lon_controller_conf.proto";
 import "modules/control/proto/mpc_controller_conf.proto";
+import "modules/control/proto/diff_drive_lat_controller_conf.proto";
 
 message ControlConf {
   enum ControllerType {
@@ -14,6 +15,7 @@ message ControlConf {
     LON_CONTROLLER = 1;
     MPC_CONTROLLER = 2;
     LON_SPEED_CONTROLLER = 3;
+    DIFF_DRIVE_LAT_CONTROLLER = 4;
   };
 
   // configs from gflags
@@ -51,6 +53,7 @@ message ControlConf {
 
   optional apollo.control.LatControllerConf lat_controller_conf = 28;
   optional apollo.control.LonControllerConf lon_controller_conf = 29;
+  optional apollo.control.DiffDriveLatControllerConf diff_drive_lat_controller_conf = 40;
 
   optional double trajectory_period = 30;
   optional double chassis_period = 31;

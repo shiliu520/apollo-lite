@@ -45,12 +45,21 @@ bool LidarFusionComponent::Init() {
     readers_.emplace_back(reader);
   }
 
+  point_cloud_pool_.resize(pool_size_);
+  for (size_t i = 0; i < pool_size_; ++i) {
+    point_cloud_pool_[i] = std::make_shared<apollo::drivers::PointCloud>();
+    point_cloud_pool_[i]->mutable_point()->Reserve(reserved_point_size_);
+  }
+
   return true;
 }
 
 bool LidarFusionComponent::Proc(
     const std::shared_ptr<apollo::drivers::PointCloud>& main_pc) {
-  auto target_pc = std::make_shared<apollo::drivers::PointCloud>(*main_pc);
+  auto target_pc = point_cloud_pool_[pool_index_++ % pool_size_];
+  target_pc->Clear();
+  target_pc->CopyFrom(*main_pc);
+
   // set measure timestamp
   lidar_system_offset_ns_ = 0;
   if (config_.has_use_system_clock() && config_.use_system_clock()) {

@@ -84,6 +84,11 @@ class LidarFusionComponent
 
   // lidar to system clock offset nanoseconds
   int64_t lidar_system_offset_ns_ = 0;
+
+  std::vector<std::shared_ptr<PointCloud>> point_cloud_pool_;
+  size_t pool_size_ = 10;
+  size_t pool_index_ = 0;
+  size_t reserved_point_size_ = 500000;
 };
 
 CYBER_REGISTER_COMPONENT(LidarFusionComponent)

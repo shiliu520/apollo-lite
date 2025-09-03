@@ -29,7 +29,9 @@ echo "Starting protobuf BUILD file generation..."
 echo "Searching for .proto files in roots: ${roots[*]}"
 
 
-find "${roots[@]}" -type f -name '*.proto' -printf '%h\0' \
+find "${roots[@]}" -type f -name '*.proto' \
+  ! -path '*/modules/dreamview/frontend/*' \
+  -printf '%h\0' \
   | sort -zu \
   | while IFS= read -r -d '' dir; do
       # For each unique directory found that contains .proto files:
