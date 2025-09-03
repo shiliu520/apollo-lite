@@ -64,7 +64,7 @@ LonSpeedController::LonSpeedController()
               "preview_speed_reference,"
               "preview_speed_error,"
               "speed_lookup,"
-              "is_full_stop,"
+              "is_full_stop"
               "\r\n");
 
       fflush(speed_log_file_);
@@ -256,15 +256,14 @@ Status LonSpeedController::ComputeControlCommand(
   debug->set_speed_lookup(chassis_->speed_mps());
 
   if (FLAGS_enable_csv_debug && speed_log_file_ != nullptr) {
-    fprintf(
-        speed_log_file_,
-        "%.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f,%d,\r\n",
-        debug->station_reference(), debug->station_error(),
-        debug->station_error_limited(), debug->preview_station_error(),
-        debug->speed_reference(), debug->speed_error(),
-        debug->speed_controller_input_limited(),
-        debug->preview_speed_reference(), debug->preview_speed_error(),
-        debug->speed_lookup(), debug->is_full_stop());
+    fprintf(speed_log_file_,
+            "%.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f,%d\r\n",
+            debug->station_reference(), debug->station_error(),
+            debug->station_error_limited(), debug->preview_station_error(),
+            debug->speed_reference(), debug->speed_error(),
+            debug->speed_controller_input_limited(),
+            debug->preview_speed_reference(), debug->preview_speed_error(),
+            debug->speed_lookup(), debug->is_full_stop());
   }
 
   return Status::OK();

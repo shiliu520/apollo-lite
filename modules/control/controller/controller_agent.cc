@@ -25,6 +25,7 @@
 #include "modules/control/controller/lon_controller.h"
 #include "modules/control/controller/lon_speed_controller.h"
 #include "modules/control/controller/mpc_controller.h"
+#include "modules/control/controller/diff_drive_lat_controller.h"
 
 namespace apollo {
 namespace control {
@@ -56,6 +57,11 @@ void ControllerAgent::RegisterControllers(const ControlConf *control_conf) {
         controller_factory_.Register(
             ControlConf::LON_SPEED_CONTROLLER,
             []() -> Controller * { return new LonSpeedController(); });
+        break;
+      case ControlConf::DIFF_DRIVE_LAT_CONTROLLER:
+        controller_factory_.Register(
+            ControlConf::DIFF_DRIVE_LAT_CONTROLLER,
+            []() -> Controller * { return new DiffDriveLatController(); });
         break;
       default:
         AERROR << "Unknown active controller type:" << active_controller;
