@@ -30,14 +30,15 @@ const int32_t Iocmd18c4d7d0::ID = 0x98c4d7d0;
 Iocmd18c4d7d0::Iocmd18c4d7d0() { Reset(); }
 
 uint32_t Iocmd18c4d7d0::GetPeriod() const {
-  static const uint32_t PERIOD = 10 * 1000;
+  static const uint32_t PERIOD = 50 * 1000;
   return PERIOD;
 }
 
 void Iocmd18c4d7d0::UpdateData(uint8_t* data) {
   set_p_io_cmd_discharge(data, io_cmd_discharge_);
-  set_p_io_cmd_check_bcc(data, io_cmd_check_bcc_);
+  // set alive count before bcc, because bcc is calculated based on all
   set_p_io_cmd_alive_cnt(data, io_cmd_alive_cnt_);
+  set_p_io_cmd_check_bcc(data, io_cmd_check_bcc_);
   set_p_io_cmd_speaker(data, io_cmd_speaker_);
   set_p_io_cmd_fog_lamp(data, io_cmd_fog_lamp_);
   set_p_io_cmd_clearance_lamp(data, io_cmd_clearance_lamp_);

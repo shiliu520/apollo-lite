@@ -257,8 +257,11 @@ ErrorCode Mk_miniController::EnableAutoMode() {
     AINFO << "already in COMPLETE_AUTO_DRIVE mode";
     return ErrorCode::OK;
   }
-  // TODO(zero): The chassis does not provide a control interface, to be
-  // confirmed
+  // there no control command needed to enable speed and steering control
+
+  // enable lamp control
+  io_cmd_18c4d7d0_->set_io_cmd_enable(true);
+
   set_driving_mode(Chassis::COMPLETE_AUTO_DRIVE);
   AINFO << "Switch to COMPLETE_AUTO_DRIVE mode ok.";
   return ErrorCode::OK;
@@ -505,6 +508,7 @@ void Mk_miniController::SecurityDogThreadFunc() {
 
   int32_t vcu_ctrl_fail = 0;
   int32_t eps_ctrl_fail = 0;
+  int32_t chassis_error = 0;
 
   while (can_sender_->IsRunning()) {
     const Chassis::DrivingMode mode = driving_mode();
@@ -548,7 +552,17 @@ void Mk_miniController::SecurityDogThreadFunc() {
 
     // 3. chassis error check
     if (CheckChassisError()) {
-      emergency_mode = true;
+      ++chassis_error;
+      if (chassis_error >= kMaxFailAttempt) {
+        AERROR << "Chassis error detected for " << kMaxFailAttempt
+               << " times, entering emergency mode. "
+               << "Please check the chassis status. "
+               << "Chassis Error Mask: 0x" << std::hex << chassis_error_mask();
+        emergency_mode = true;
+        set_chassis_error_code(Chassis::CHASSIS_ERROR);
+      }
+    } else {
+      chassis_error = 0;
     }
 
     if (emergency_mode && mode != Chassis::EMERGENCY_MODE) {
@@ -584,45 +598,21 @@ bool Mk_miniController::CheckResponse(const int32_t flags, bool need_wait) {
     // TODO(Pride Leong): check alive count and bcc of feedback messages
     const auto error_report = chassis_detail.mk_mini().veh_fb_diag_18c4eaef();
     if (flags & CHECK_RESPONSE_VCU_UNIT_FLAG) {
-      // check if the key messages are received in time
-      //  - Ctrlfb18c4d2ef, control feedback
-      //  - Iofb18c4daef, IO feedback
-      //  - Vehfbdiag18c4eaef, error report
-      // and check if motor in fault state
-      is_vcu_online =
-          message_manager_->CheckMessageTimeout(
-              Ctrlfb18c4d2ef::ID, kMessageFeedbackPeriodThresholdRatio) &&
-          message_manager_->CheckMessageTimeout(
-              Iofb18c4daef::ID, kMessageFeedbackPeriodThresholdRatio) &&
-          message_manager_->CheckMessageTimeout(
-              Vehfbdiag18c4eaef::ID,
-
-              kMessageFeedbackPeriodThresholdRatio) &&
-          (!error_report.veh_fb_rdrvmcufault() &&
-           !error_report.veh_fb_ldrvmcufault());
+      // check if motor in fault state
+      is_vcu_online = (!error_report.veh_fb_rdrvmcufault() &&
+                       !error_report.veh_fb_ldrvmcufault());
       ;
       check_ok = check_ok && is_vcu_online;
     }
 
     if (flags & CHECK_RESPONSE_EPS_UNIT_FLAG) {
-      // check if the key messages are received in time
-      //  - Ctrlfb18c4d2ef, control feedback
-      //  - Iofb18c4daef, IO feedback
-      //  - Vehfbdiag18c4eaef, error report
-      // and check if eps online
-      is_eps_online =
-          message_manager_->CheckMessageTimeout(
-              Ctrlfb18c4d2ef::ID, kMessageFeedbackPeriodThresholdRatio) &&
-          message_manager_->CheckMessageTimeout(
-              Iofb18c4daef::ID, kMessageFeedbackPeriodThresholdRatio) &&
-          message_manager_->CheckMessageTimeout(
-              Vehfbdiag18c4eaef::ID, kMessageFeedbackPeriodThresholdRatio) &&
-          (!error_report.veh_fb_epsdisonline() &&
-           !error_report.veh_fb_epsmosfetot() &&
-           !error_report.veh_fb_epsfault() &&
-           !error_report.veh_fb_epsdiswork() &&
-           !error_report.veh_fb_epswarning() &&
-           !error_report.veh_fb_epsovercurrent());
+      // check if eps online
+      is_eps_online = (!error_report.veh_fb_epsdisonline() &&
+                       !error_report.veh_fb_epsmosfetot() &&
+                       !error_report.veh_fb_epsfault() &&
+                       !error_report.veh_fb_epsdiswork() &&
+                       !error_report.veh_fb_epswarning() &&
+                       !error_report.veh_fb_epsovercurrent());
       check_ok = check_ok && is_eps_online;
     }
 
