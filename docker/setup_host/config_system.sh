@@ -17,7 +17,7 @@ set -euo pipefail
 # --- Global Variables ---
 # Determine the absolute path to Apollo root directory.
 # Assumes this script is located at <APOLLO_ROOT_DIR>/docker/setup_host/config_system.sh
-APOLLO_ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." && pwd )"
+APOLLO_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # use relative path for multiple instances
 CORE_DUMP_DIR="data/core"
 CORE_DUMP_CONF_FILE="/etc/sysctl.d/99-core-dump.conf"
@@ -25,6 +25,13 @@ BAZEL_CACHE_DIR="/var/cache/bazel/repo_cache"
 UVCVIDEO_CONF_FILE="/etc/modprobe.d/uvcvideo.conf"
 UDEV_RULES_SRC_DIR="${APOLLO_ROOT_DIR}/docker/setup_host/etc/udev/rules.d"
 UDEV_RULES_DEST_DIR="/etc/udev/rules.d"
+
+# Source path of the service file within the project
+AUTOSERVICE_SRC_FILE="${APOLLO_ROOT_DIR}/docker/setup_host/etc/systemd/system/autostart.service"
+# Destination path for systemd services
+AUTOSERVICE_DEST_FILE="/etc/systemd/system/autostart.service"
+# User who will run the autonomous driving stack. SUDO_USER is the user who invoked sudo.
+WHL_HOST_USER="${SUDO_USER:-$(whoami)}"
 
 # --- Color Definitions for Output ---
 BOLD='\033[1m'
@@ -57,8 +64,8 @@ check_host_setup_pre_conditions() {
 
   # 1. Check for root privileges
   if [ "$(id -u)" -ne 0 ]; then
-      error "This script must be run with root privileges (sudo)."
-      return 1
+    error "This script must be run with root privileges (sudo)."
+    return 1
   fi
 
   # 2. Check if APOLLO_ROOT_DIR exists
@@ -87,6 +94,14 @@ check_host_setup_pre_conditions() {
   fi
   info "Udev rules source directory detected."
 
+  # 5. Check for existence of autostart service file
+  if [ ! -f "${AUTOSERVICE_SRC_FILE}" ]; then
+    error "Autostart service file not found at '${AUTOSERVICE_SRC_FILE}'."
+    error "Please ensure the service definition file is present."
+    return 1
+  fi
+  info "Autostart service source file detected."
+
   success "All host setup pre-conditions met."
   return 0
 }
@@ -96,8 +111,8 @@ setup_core_dump() {
   info "Setting up core dump format..."
 
   # Check if core dump configuration is already applied
-  if [ -f "${CORE_DUMP_CONF_FILE}" ] && grep -q "kernel.core_pattern = ${CORE_DUMP_DIR}/core_%e.%p" "${CORE_DUMP_CONF_FILE}" && \
-     [[ "$(sudo sysctl -n kernel.core_pattern)" == "${CORE_DUMP_DIR}/core_%e.%p" ]]; then
+  if [ -f "${CORE_DUMP_CONF_FILE}" ] && grep -q "kernel.core_pattern = ${CORE_DUMP_DIR}/core_%e.%p" "${CORE_DUMP_CONF_FILE}" &&
+    [[ "$(sudo sysctl -n kernel.core_pattern)" == "${CORE_DUMP_DIR}/core_%e.%p" ]]; then
     info "Core dump configuration already detected and active. Skipping."
     return 0
   fi
@@ -113,10 +128,13 @@ setup_core_dump() {
   fi
 
   # Ensure the directory has appropriate permissions for core dumps
-  sudo chmod 0777 "${CORE_DUMP_DIR}" || { error "Failed to set permissions for core dump directory: ${CORE_DUMP_DIR}."; return 1; }
+  sudo chmod 0777 "${CORE_DUMP_DIR}" || {
+    error "Failed to set permissions for core dump directory: ${CORE_DUMP_DIR}."
+    return 1
+  }
 
   info "Writing core dump configuration to ${CORE_DUMP_CONF_FILE}..."
-  sudo tee "${CORE_DUMP_CONF_FILE}" > /dev/null <<EOF
+  sudo tee "${CORE_DUMP_CONF_FILE}" > /dev/null << EOF
 kernel.core_pattern = ${CORE_DUMP_DIR}/core_%e.%p
 EOF
   if [ $? -ne 0 ]; then
@@ -152,7 +170,10 @@ setup_bazel_cache_dir() {
   fi
 
   # Ensure permissions are appropriate for a shared cache
-  sudo chmod a+rwx "${BAZEL_CACHE_DIR}" || { error "Failed to set permissions for Bazel cache directory."; return 1; }
+  sudo chmod a+rwx "${BAZEL_CACHE_DIR}" || {
+    error "Failed to set permissions for Bazel cache directory."
+    return 1
+  }
 
   success "Bazel cache directory configured."
   return 0
@@ -263,7 +284,7 @@ configure_uvcvideo_module() {
   if [ -f "${UVCVIDEO_CONF_FILE}" ] && grep -q "options uvcvideo clock=realtime" "${UVCVIDEO_CONF_FILE}"; then
     info "uvcvideo clock configuration already detected. Skipping write."
   else
-    sudo tee "${UVCVIDEO_CONF_FILE}" > /dev/null <<EOF
+    sudo tee "${UVCVIDEO_CONF_FILE}" > /dev/null << EOF
 options uvcvideo clock=realtime
 EOF
     if [ $? -ne 0 ]; then
@@ -323,6 +344,82 @@ add_user_to_docker_group() {
   success "User '${user}' added to the Docker group. Please log out and back in for changes to take effect."
 }
 
+# Installs and enables the autostart systemd service.
+install_autostart_service() {
+  info "Installing and configuring the autostart systemd service..."
+
+  # 1: Hard Fail on Root Installation (Security Best Practice) ---
+  # Running the main AD stack as root is a major security risk.
+  # We now block this by default and require an explicit, intentional override.
+  if [[ "${WHL_HOST_USER}" == "root" ]]; then
+     error "Running the autonomous driving stack as 'root' is not allowed for security reasons."
+     error "To override this critical check, set the environment variable ALLOW_ROOT_INSTALL=yes and re-run."
+     if [[ "${ALLOW_ROOT_INSTALL:-no}" != "yes" ]]; then
+         return 1 # Hard fail, aborting the installation.
+     else
+         info "ALLOW_ROOT_INSTALL=yes detected. Proceeding with installation as root. THIS IS NOT RECOMMENDED."
+     fi
+  fi
+
+  # 2: Input Validation for Username (Prevent Command Injection) ---
+  # Ensure the username consists only of safe, alphanumeric characters.
+  if ! [[ "${WHL_HOST_USER}" =~ ^[a-zA-Z0-9_][a-zA-Z0-9_-]*$ ]]; then
+    error "Invalid username detected: '${WHL_HOST_USER}'. Usernames must be alphanumeric (with _ or -)."
+    error "Aborting installation to prevent potential command injection."
+    return 1
+  fi
+  info "Target user '${WHL_HOST_USER}' validated."
+
+  # 3: Input Validation for Path (Prevent Command Injection) ---
+  # Ensure the path is a valid absolute path and does not contain characters
+  # that could break the sed command or be interpreted by the shell.
+  if ! [[ "${APOLLO_ROOT_DIR}" =~ ^/[a-zA-Z0-9_/.-]+$ ]]; then
+    error "Invalid APOLLO_ROOT_DIR detected: '${APOLLO_ROOT_DIR}'."
+    error "Path must be absolute and contain only safe characters (alphanumeric, /, _, ., -)."
+    error "Aborting installation to prevent potential command injection."
+    return 1
+  fi
+  info "Apollo root directory '${APOLLO_ROOT_DIR}' validated."
+
+  info "Copying '${AUTOSERVICE_SRC_FILE}' to '${AUTOSERVICE_DEST_FILE}'..."
+  if ! cp "${AUTOSERVICE_SRC_FILE}" "${AUTOSERVICE_DEST_FILE}"; then
+    error "Failed to copy service file. Check permissions."
+    return 1
+  fi
+
+  # 4: Safer Replacement Method ---
+  # By using a different delimiter for sed (like '#'), we make the replacement
+  # robust even if the path contains the default '/' delimiter.
+  # The validation above already mitigates this, but this is a defense-in-depth measure.
+  info "Customizing service file with user='${WHL_HOST_USER}' and path='${APOLLO_ROOT_DIR}'..."
+  if ! sed -i "s#__USER__#${WHL_HOST_USER}#g" "${AUTOSERVICE_DEST_FILE}"; then
+    error "Failed to replace user placeholder in service file."
+    return 1
+  fi
+  if ! sed -i "s#__APOLLO_ROOT_DIR__#${APOLLO_ROOT_DIR}#g" "${AUTOSERVICE_DEST_FILE}"; then
+    error "Failed to replace path placeholder in service file."
+    return 1
+  fi
+
+  # Reload the systemd daemon
+  info "Reloading systemd daemon..."
+  if ! systemctl daemon-reload; then
+    error "Failed to reload systemd daemon. Run 'journalctl -xe' for details."
+    return 1
+  fi
+
+  # Enable the service
+  info "Enabling 'autostart.service' to run on boot..."
+  if ! systemctl enable autostart.service; then
+    error "Failed to enable autostart.service."
+    return 1
+  fi
+
+  success "Autostart service installed and enabled successfully."
+  info "The autonomous driving system will now start automatically on the next boot."
+  return 0
+}
+
 # --- Main Host Setup Orchestration Function ---
 # This is the primary entry point for setting up the host machine.
 setup_host_machine() {
@@ -370,6 +467,12 @@ setup_host_machine() {
     return 1
   fi
 
+  # 8. Install and enable the autostart service
+  if ! install_autostart_service; then
+    error "Failed to install the autostart service. Host setup is incomplete."
+    return 1
+  fi
+
   success "Host machine setup completed successfully!"
   return 0 # Final success
 }
@@ -382,7 +485,7 @@ main() {
   # Any other argument will result in an error message.
   if [ "$#" -eq 0 ] || [ "$1" == "install" ]; then
     if [ "$#" -eq 0 ]; then
-        info "No argument provided. Defaulting to 'install' mode."
+      info "No argument provided. Defaulting to 'install' mode."
     fi
     setup_host_machine
   else
