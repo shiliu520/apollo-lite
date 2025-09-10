@@ -16,22 +16,20 @@
 # limitations under the License.
 ###############################################################################
 
-set -euo pipefail # Added for robustness
+set -euo pipefail
 
 # --- Constants ---
 DEV_CONTAINER_PREFIX='apollo_dev_'
-DEV_INSIDE="in-dev-docker" # Consistent with start_container.sh
+DEV_INSIDE="in-dev-docker"
 
-# --- Global Variables (will be set by parse_arguments) ---
-# DOCKER_USER will be the username used for 'docker exec -u'
-# Default to host's USER, can be overridden by --user
+# --- Global Variables ---
 DOCKER_USER="${USER}"
-# DEV_CONTAINER will be the name of the container to connect to
-# Default to apollo_dev_host_user, can be overridden by --user or -n
-DEV_CONTAINER="${DEV_CONTAINER_PREFIX}${USER}" # Initialize with default
-
-# Placeholder for user-specified container name via -n
+DEV_CONTAINER="${DEV_CONTAINER_PREFIX}${USER}"
 USER_EXPLICIT_CONTAINER_NAME=""
+#
+# === [MODIFICATION 1]: Add a new global variable for the command ===
+#
+NON_INTERACTIVE_CMD=""
 
 # --- Helper Functions ---
 function show_usage() {
@@ -39,13 +37,16 @@ function show_usage() {
 Usage: $0 [options]
 Connects to a running Apollo development Docker container.
 
+MODES:
+  Interactive (default): If no command is provided, starts an interactive bash session.
+  Non-Interactive:       If a command is provided, executes it inside the container and exits.
+
 OPTIONS:
-    -h, --help              Display this help and exit.
-    -n, --name <container_name> Specify the *full* name of the docker container to connect to.
-                            Overrides default naming based on user.
-    --user <username>       Specify the username to log into inside the container.
-                            This also influences the container name if -n is not used.
-                            (Default: current host user for both container name and login user).
+    -h, --help                  Display this help and exit.
+    -n, --name <container_name> Specify the *full* name of the container to connect to.
+    -c, --command <"command">   Specify a command to execute in non-interactive mode.
+    --user <username>           Specify the username for the container session.
+                                Influences default container name if -n is not used.
 EOF
 }
 
@@ -53,51 +54,57 @@ function parse_arguments() {
     local opt_n_value=""
     local opt_user_value=""
 
+    #
+    # === [MODIFICATION 2]: Update argument parsing logic ===
+    # Using a while loop to process options, allowing a command to be passed at the end.
+    # The previous logic would fail if options and commands were mixed.
+    #
     while [[ $# -gt 0 ]]; do
-        local opt="$1"
-        shift
-        case "${opt}" in
+        case "$1" in
             -h | --help)
                 show_usage
                 exit 0
                 ;;
             -n | --name)
-                opt_n_value="$1"
                 shift
-                if [[ -z "${opt_n_value}" ]]; then
-                    echo "Error: Missing argument for -n/--name." >&2
-                    exit 1
+                if [[ -z "${1-}" ]]; then
+                    echo "Error: Missing argument for -n/--name." >&2; exit 1
                 fi
-                USER_EXPLICIT_CONTAINER_NAME="${opt_n_value}" # <-- Here's the change: no prefixing
+                USER_EXPLICIT_CONTAINER_NAME="$1"
+                shift
                 ;;
             --user)
-                opt_user_value="$1"
                 shift
-                if [[ -z "${opt_user_value}" ]]; then
-                    echo "Error: Missing argument for --user." >&2
-                    exit 1
+                if [[ -z "${1-}" ]]; then
+                    echo "Error: Missing argument for --user." >&2; exit 1
                 fi
-                DOCKER_USER="${opt_user_value}"
+                DOCKER_USER="$1"
+                shift
+                ;;
+            -c | --command)
+                shift
+                if [[ -z "${1-}" ]]; then
+                    echo "Error: Missing argument for -c/--command." >&2; exit 1
+                fi
+                NON_INTERACTIVE_CMD="$1"
+                shift
                 ;;
             *)
-                echo "Error: Unknown option: ${opt}" >&2
-                show_usage
-                exit 1
+                # If an unknown option is found, assume it's the start of the command
+                NON_INTERACTIVE_CMD="$*"
+                break # Exit the loop, the rest of the arguments are the command
                 ;;
         esac
     done
 
+
     # --- Determine the final DEV_CONTAINER name ---
-    # Priority: -n (explicit full name) > --user (implied prefixed name) > host USER (default prefixed name)
     if [[ -n "${USER_EXPLICIT_CONTAINER_NAME}" ]]; then
         DEV_CONTAINER="${USER_EXPLICIT_CONTAINER_NAME}"
-    elif [[ -n "${opt_user_value}" ]]; then
-        # If --user was provided, but -n was not, use --user's value for container name suffix
-        DEV_CONTAINER="${DEV_CONTAINER_PREFIX}${opt_user_value}"
-    else
-        # Fallback to host's USER for container name suffix (default)
-        DEV_CONTAINER="${DEV_CONTAINER_PREFIX}${USER}"
-    fi
+    elif [[ "${DOCKER_USER}" != "${USER}" ]]; then
+        # If --user was provided AND it's different from the host user, use it for the container name
+        DEV_CONTAINER="${DEV_CONTAINER_PREFIX}${DOCKER_USER}"
+    fi # Otherwise, the default DEV_CONTAINER="${DEV_CONTAINER_PREFIX}${USER}" is used
 }
 
 function restart_stopped_container() {
@@ -120,23 +127,43 @@ function restart_stopped_container() {
 
 # --- Main Script Execution ---
 
-xhost +local:root 1>/dev/null 2>&1 || { echo "Warning: xhost command failed. Display may not work." >&2; }
-
 parse_arguments "$@"
 
 restart_stopped_container # Ensures the target container is running
 
-echo "Connecting to container '${DEV_CONTAINER}' as user '${DOCKER_USER}'..."
 
-# Execute bash inside the container
-docker exec \
-    -u "${DOCKER_USER}" \
-    -e HISTFILE=/apollo/.dev_bash_hist \
-    -it "${DEV_CONTAINER}" \
-    /bin/bash
+#
+# === [MODIFICATION 3]: Add the core logic to switch between modes ===
+#
+if [[ -n "${NON_INTERACTIVE_CMD}" ]]; then
+    # === NON-INTERACTIVE MODE ===
+    echo "Executing command in container '${DEV_CONTAINER}':"
+    echo "  ${NON_INTERACTIVE_CMD}"
 
-# Cleanup xhost (execute only if docker exec was successful, or cleanup anyway)
-# The `|| true` ensures the cleanup command runs even if docker exec fails.
-xhost -local:root 1>/dev/null 2>&1 || true
+    # Use 'docker exec' without '-it'. The command is passed as arguments to /bin/bash -c
+    docker exec \
+        -u "${DOCKER_USER}" \
+        "${DEV_CONTAINER}" \
+        /bin/bash -c "${NON_INTERACTIVE_CMD}"
 
-echo "Disconnected from container."
+    echo "Command execution finished."
+
+else
+    # === INTERACTIVE MODE ===
+    echo "Connecting to container '${DEV_CONTAINER}' as user '${DOCKER_USER}'..."
+
+    # Add display access for GUI applications
+    xhost +local:root &>/dev/null || true
+
+    # Use 'docker exec' with '-it' for an interactive terminal.
+    docker exec \
+        -u "${DOCKER_USER}" \
+        -e HISTFILE=/apollo/.dev_bash_hist \
+        -it \
+        "${DEV_CONTAINER}" \
+        /bin/bash
+
+    # Clean up display access after session ends
+    xhost -local:root &>/dev/null || true
+    echo "Disconnected from container."
+fi
