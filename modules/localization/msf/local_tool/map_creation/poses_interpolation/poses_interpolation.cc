@@ -15,6 +15,7 @@
  *****************************************************************************/
 #include "modules/localization/msf/local_tool/map_creation/poses_interpolation/poses_interpolation.h"
 
+#include <cassert>
 #include <fstream>
 
 #include "cyber/common/log.h"
