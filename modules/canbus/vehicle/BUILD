@@ -56,7 +56,6 @@ cc_library(
         "//modules/canbus/vehicle/wey:wey_vehicle_factory",
         "//modules/canbus/vehicle/yunle:yunle_vehicle_factory",
         "//modules/canbus/vehicle/zhongyun:zhongyun_vehicle_factory",
-        "//modules/canbus/vehicle/mk_mini:mk_mini_vehicle_factory",
         "//modules/common/util:factory",
     ],
 )
