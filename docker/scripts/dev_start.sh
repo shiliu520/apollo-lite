@@ -503,6 +503,7 @@ function main() {
       -itd     # Interactive, TTY, Detached (run in background)
       --name "${DEV_CONTAINER}"
       --net host # Use host network
+      -p 8888:8888
       --shm-size "${SHM_SIZE}"
       -w /apollo             # Set working directory inside container
       --hostname "${DEV_INSIDE}" # Set hostname inside container for easy identification
