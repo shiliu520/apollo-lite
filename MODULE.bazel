@@ -37,6 +37,7 @@ bazel_dep(name = "boost.property_tree", version = "1.87.0")
 bazel_dep(name = "boost.program_options", version = "1.87.0")
 bazel_dep(name = "boost.signals2", version = "1.87.0")
 bazel_dep(name = "boost.tuple", version = "1.87.0")
+bazel_dep(name = "boost.asio", version = "1.87.0")
 
 # thirdparty
 bazel_dep(name = "abseil-cpp", version = "20240116.2", repo_name = "com_google_absl")
