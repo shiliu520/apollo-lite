@@ -502,7 +502,7 @@ function main() {
     local run_opts=(
       -itd     # Interactive, TTY, Detached (run in background)
       --name "${DEV_CONTAINER}"
-      --net host # Use host network
+      # --net host # Use host network
       -p 8888:8888 # Dreamview map
       -p 9090:9090 # Cyber bridge map
       --shm-size "${SHM_SIZE}"

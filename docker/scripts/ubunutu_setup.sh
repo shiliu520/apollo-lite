@@ -15,6 +15,7 @@ sudo apt-get install -y --no-install-recommends \
     libavformat-dev \
     libavcodec-dev \
     libpcap-dev \
+    libswscale-dev \
     git  # 添加git，因为后面要显示git分支
 
 # 配置忽略大小写自动补齐
