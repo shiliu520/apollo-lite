@@ -106,6 +106,9 @@ void Node::add_writer(const std::string& channel, const std::string& type,
   if (writer.desc.empty()) {
     AWARN << "Cannot find proto descriptor for message type " << type;
     return;
+  } else
+  {
+    AINFO << "Can find proto descriptor for message type " << type;
   }
 
   apollo::cyber::proto::RoleAttributes role;

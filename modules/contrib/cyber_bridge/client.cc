@@ -25,6 +25,72 @@ enum {
   OP_PUBLISH = 4,
 };
 
+void FixProtoPath(const std::string& s, std::string& fixed_s) {
+    using namespace google::protobuf;  // 或者使用全限定名
+
+    FileDescriptorProto file_desc_proto;
+    file_desc_proto.ParseFromString(s);
+
+    // 路径映射表
+    std::vector<std::pair<std::string, std::string>> path_map = {
+      {"modules/common/configs/proto/", "modules/common_msgs/config_msgs/"},
+      {"modules/common/proto/", "modules/common_msgs/basic_msgs/"},
+      {"modules/localization/proto/", "modules/common_msgs/localization_msgs/"},
+      {"modules/drivers/gnss/proto/", "modules/common_msgs/sensor_msgs/"},
+      {"modules/perception/proto/", "modules/common_msgs/perception_msgs/"},
+      {"modules/canbus/proto/", "modules/common_msgs/chassis_msgs/"},
+      {"modules/map/proto/", "modules/common_msgs/map_msgs/"}
+    };
+
+    // 替换函数
+    auto replace_prefix = [](const std::string& name,
+      const std::vector<std::pair<std::string, std::string>>& map) {
+        for (const auto& kv : map) {
+            if (name.find(kv.first) == 0) {
+                return kv.second + name.substr(kv.first.size());
+            }
+        }
+        return name;
+    };
+
+    // 替换 name 字段
+    file_desc_proto.set_name(replace_prefix(file_desc_proto.name(), path_map));
+
+    // 替换 dependency 字段
+    for (int i = 0; i < file_desc_proto.dependency_size(); ++i) {
+        file_desc_proto.set_dependency(i,
+          replace_prefix(file_desc_proto.dependency(i), path_map));
+    }
+
+    // 特殊处理：针对旧版vehicle_config.proto，移除重复定义的VehicleID消息，并添加正确的导入
+    // https://github.com/lgsvl/apollo-5.0/blob/simulator/modules/common/configs/proto/vehicle_config.proto
+    if (file_desc_proto.name().find("vehicle_config.proto") != std::string::npos) {
+        // 检查并移除VehicleID消息定义
+        for (int i = file_desc_proto.message_type_size() - 1; i >= 0; --i) {
+            if (file_desc_proto.message_type(i).name() == "VehicleID") {
+                file_desc_proto.mutable_message_type()->DeleteSubrange(i, 1);
+                break;
+            }
+        }
+
+        // 确保导入vehicle_id.proto
+        std::string vehicle_id_dep = "modules/common_msgs/basic_msgs/vehicle_id.proto";
+        bool has_vehicle_id_import = false;
+        for (int i = 0; i < file_desc_proto.dependency_size(); ++i) {
+            if (file_desc_proto.dependency(i) == vehicle_id_dep) {
+                has_vehicle_id_import = true;
+                break;
+            }
+        }
+        if (!has_vehicle_id_import) {
+            file_desc_proto.add_dependency(vehicle_id_dep);
+        }
+    }
+
+    // 重新序列化
+    file_desc_proto.SerializeToString(&fixed_s);
+}
+
 Client::Client(Node* node, Clients* clients, boost::asio::ip::tcp::socket s)
     : node(*node), clients(*clients), socket(std::move(s)) {
   auto endpoint = socket.remote_endpoint();
@@ -151,8 +217,10 @@ void Client::handle_register_desc() {
     ADEBUG << "OP_REGISTER_DESC, count = " << count;
 
     auto factory = apollo::cyber::message::ProtobufFactory::Instance();
+    std::string fixed_data;
     for (const auto& s : desc) {
-      factory->RegisterPythonMessage(s);
+      FixProtoPath(s, fixed_data);
+      factory->RegisterPythonMessage(fixed_data);
     }
 
     buffer.erase(buffer.begin(), buffer.begin() + offset);
