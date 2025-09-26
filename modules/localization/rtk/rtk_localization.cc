@@ -142,7 +142,8 @@ void RTKLocalization::RunWatchDog(double gps_timestamp) {
     std::stringstream ss;
     ss << "Raw GPS Message Delay. GPS message is " << gps_delay_cycle_cnt
        << " cycle " << gps_delay_sec << " sec behind current time.";
-    monitor_logger_.ERROR(ss.str());
+    // https://github.com/lgsvl/simulator/issues/530
+    // monitor_logger_.ERROR(ss.str());
   }
 
   // check IMU time stamp against system time
@@ -159,7 +160,7 @@ void RTKLocalization::RunWatchDog(double gps_timestamp) {
     std::stringstream ss;
     ss << "Raw IMU Message Delay. IMU message is " << imu_delay_cycle_cnt
        << " cycle " << imu_delay_sec << " sec behind current time.";
-    monitor_logger_.ERROR(ss.str());
+    // monitor_logger_.ERROR(ss.str());
   }
 
   // to prevent it from beeping continuously
